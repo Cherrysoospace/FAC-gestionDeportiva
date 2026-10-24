@@ -34,3 +34,6 @@ build/
 
 # Local configuration and secrets
 src/main/resources/application.properties
+
+target_classes/
+target_test-classes/
