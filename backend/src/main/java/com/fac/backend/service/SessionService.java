@@ -12,6 +12,9 @@ import com.fac.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -21,6 +24,23 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final UserRepository userRepository;
     private final SessionMapper sessionMapper;
+
+    public void registerAuthenticatedSession(
+            User user,
+            String jti,
+            Instant expiresAt) {
+
+        Session session = Session.builder()
+                .token(jti)
+                .expiration(LocalDateTime.ofInstant(
+                        expiresAt,
+                        ZoneId.systemDefault()
+                ))
+                .user(user)
+                .build();
+
+        sessionRepository.save(session);
+    }
 
     public SessionResponseDTO create(Long userId, SessionRequestDTO dto) {
         User user = findUser(userId);

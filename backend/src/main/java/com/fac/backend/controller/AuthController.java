@@ -2,6 +2,7 @@ package com.fac.backend.controller;
 
 import com.fac.backend.dto.AuthResponseDTO;
 import com.fac.backend.dto.LoginRequestDTO;
+import com.fac.backend.dto.OAuthRequestDTO;
 import com.fac.backend.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,5 +21,11 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponseDTO login(@Valid @RequestBody LoginRequestDTO dto) {
         return authService.login(dto);
+    }
+
+    @PostMapping("/oauth/firebase")
+    public AuthResponseDTO loginWithFirebase(
+            @Valid @RequestBody OAuthRequestDTO dto) {
+        return authService.loginWithFirebase(dto.getIdToken());
     }
 }

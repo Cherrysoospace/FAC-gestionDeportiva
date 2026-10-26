@@ -53,6 +53,10 @@ public class DatabaseSeeder {
                     "CONSULTOR",
                     "Consulta de usuarios"
             );
+            findOrCreateRole(
+                    "AFICIONADO",
+                    "Usuario aficionado con permisos mínimos"
+            );
 
             User adminUser = findOrCreateUser();
             assignRole(adminUser, adminRole);

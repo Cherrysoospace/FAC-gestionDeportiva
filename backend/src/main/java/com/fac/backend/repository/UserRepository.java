@@ -16,6 +16,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByAuthProviderAndExternalId(
+            String authProvider,
+            String externalId
+    );
+
     @EntityGraph(attributePaths = {"profile"}) // Indica que se debe cargar el perfil junto con el usuario
     Optional<User> findWithProfileById(Long id); //basicamente, el JOIN 
 

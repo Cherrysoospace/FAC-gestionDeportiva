@@ -23,16 +23,17 @@ public class JwtService {
 
     private final JwtEncoder jwtEncoder;
 
-    public AuthResponseDTO generateToken(User user) {
+    public IssuedToken generateToken(User user) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(TOKEN_DURATION);
+        String jti = UUID.randomUUID().toString();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("ms-security")
                 .subject(user.getId().toString())
                 .issuedAt(now)
                 .expiresAt(expiresAt)
-                .id(UUID.randomUUID().toString())
+                .id(jti)
                 .claim("email", user.getEmail())
                 .build();
 
@@ -41,10 +42,20 @@ public class JwtService {
                 JwtEncoderParameters.from(header, claims)
         );
 
-        return new AuthResponseDTO(
-                jwt.getTokenValue(),
-                "Bearer",
+        return new IssuedToken(
+                new AuthResponseDTO(
+                        jwt.getTokenValue(),
+                        "Bearer",
+                        expiresAt
+                ),
+                jti,
                 expiresAt
         );
+    }
+
+    public record IssuedToken(
+            AuthResponseDTO response,
+            String jti,
+            Instant expiresAt) {
     }
 }
