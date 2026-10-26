@@ -19,7 +19,7 @@ public class ProfileRequestDTO {
     )
     @Pattern(
 	    regexp = "^$|^[0-9]{7,15}$",
-	    message = "El telÃ©fono debe contener entre 7 y 15 dÃ­gitos"
+	    message = "El teléfono debe contener entre 7 y 15 dígitos"
     )
     private String phone;
 
