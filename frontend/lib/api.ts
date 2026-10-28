@@ -7,7 +7,8 @@ const API_URL = (
 const PUBLIC_PATHS = new Set([
     '/api/auth/login',
     '/api/auth/register',
-    '/api/auth/oauth/firebase'
+    '/api/auth/oauth/firebase',
+    '/api/auth/oauth/discord'
 ]);
 
 export class ApiRequestError extends Error {

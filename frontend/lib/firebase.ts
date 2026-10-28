@@ -1,5 +1,5 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { Auth, getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -8,16 +8,16 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-const missingVariables = Object.entries(firebaseConfig)
-    .filter(([, value]) => !value)
-    .map(([key]) => key);
+const isConfigured = Object.values(firebaseConfig).every(Boolean);
 
-if (missingVariables.length > 0) {
-    throw new Error(
-        `Faltan variables de entorno de Firebase: ${missingVariables.join(', ')}`
+if (!isConfigured && typeof window !== 'undefined') {
+    console.warn(
+        'Firebase no está configurado: el login con Google estará deshabilitado.'
     );
 }
 
-const app = getApps()[0] ?? initializeApp(firebaseConfig);
+const app = isConfigured
+    ? (getApps()[0] ?? initializeApp(firebaseConfig))
+    : null;
 
-export const auth = getAuth(app);
+export const auth: Auth | null = app ? getAuth(app) : null;

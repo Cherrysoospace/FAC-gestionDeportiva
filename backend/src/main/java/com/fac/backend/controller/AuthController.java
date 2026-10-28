@@ -1,6 +1,7 @@
 package com.fac.backend.controller;
 
 import com.fac.backend.dto.AuthResponseDTO;
+import com.fac.backend.dto.DiscordOAuthRequestDTO;
 import com.fac.backend.dto.LoginRequestDTO;
 import com.fac.backend.dto.MeResponseDTO;
 import com.fac.backend.dto.OAuthRequestDTO;
@@ -42,6 +43,12 @@ public class AuthController {
     public AuthResponseDTO loginWithFirebase(
             @Valid @RequestBody OAuthRequestDTO dto) {
         return authService.loginWithFirebase(dto.getIdToken());
+    }
+
+    @PostMapping("/oauth/discord")
+    public AuthResponseDTO loginWithDiscord(
+            @Valid @RequestBody DiscordOAuthRequestDTO dto) {
+        return authService.loginWithDiscord(dto.getCode(), dto.getRedirectUri());
     }
 
     @PostMapping("/logout")

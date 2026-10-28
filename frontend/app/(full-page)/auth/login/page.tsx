@@ -81,6 +81,29 @@ const LoginPageContent = () => {
         }
     };
 
+    const handleDiscordLogin = () => {
+        const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
+
+        if (!clientId) {
+            setError('Falta NEXT_PUBLIC_DISCORD_CLIENT_ID');
+            return;
+        }
+
+        const state = crypto.randomUUID();
+        sessionStorage.setItem('discordOAuthState', state);
+        sessionStorage.setItem('discordOAuthNext', nextPath);
+
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: `${window.location.origin}/auth/discord/callback`,
+            response_type: 'code',
+            scope: 'identify email',
+            state
+        });
+
+        window.location.href = `https://discord.com/oauth2/authorize?${params}`;
+    };
+
     const containerClassName = classNames(
         'surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden',
         { 'p-input-filled': layoutConfig.inputStyle === 'filled' }
@@ -105,6 +128,7 @@ const LoginPageContent = () => {
                         <Button type="submit" label="Iniciar sesión" className="w-full p-3 text-xl" loading={loading} disabled={loading || googleLoading || isLoading} />
                     </form>
                     <Button type="button" label="Continuar con Google" icon="pi pi-google" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleGoogleLogin} loading={googleLoading} disabled={loading || googleLoading || isLoading} />
+                    <Button type="button" label="Continuar con Discord" icon="pi pi-discord" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleDiscordLogin} disabled={loading || googleLoading || isLoading} />
                     <Button type="button" label="¿No tienes cuenta? Regístrate" link className="w-full mt-3" onClick={() => router.push('/auth/register')} />
                 </div>
             </div>

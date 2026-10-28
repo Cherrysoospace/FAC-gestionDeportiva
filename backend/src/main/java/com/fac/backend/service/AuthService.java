@@ -11,6 +11,7 @@ import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.mapper.RoleMapper;
 import com.fac.backend.repository.UserRepository;
+import com.fac.backend.security.DiscordOAuthClient;
 import com.fac.backend.security.FirebaseIdentity;
 import com.fac.backend.security.FirebaseTokenVerifier;
 import java.util.List;
@@ -29,6 +30,7 @@ public class AuthService {
     private final SessionService sessionService;
     private final UserService userService;
     private final FirebaseTokenVerifier firebaseTokenVerifier;
+    private final DiscordOAuthClient discordOAuthClient;
     private final EffectivePermissionService effectivePermissionService;
     private final PermissionCatalogService permissionCatalogService;
     private final RoleMapper roleMapper;
@@ -81,6 +83,24 @@ public class AuthService {
     @Transactional
     public AuthResponseDTO loginWithFirebase(String idToken) {
         FirebaseIdentity identity = firebaseTokenVerifier.verify(idToken);
+
+        User user = userService.resolverUsuario(
+                identity.provider(),
+                identity.uid(),
+                identity.email(),
+                identity.name(),
+                identity.picture()
+        );
+
+        ensureEnabled(user);
+
+        return issueSession(user);
+    }
+
+    @Transactional
+    public AuthResponseDTO loginWithDiscord(String code, String redirectUri) {
+        FirebaseIdentity identity =
+                discordOAuthClient.authenticate(code, redirectUri);
 
         User user = userService.resolverUsuario(
                 identity.provider(),

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+    Auth,
     GoogleAuthProvider,
     signInWithPopup,
     signOut
@@ -67,6 +68,11 @@ interface AuthContextValue {
     ) => Promise<void>;
     register: (name: string, email: string, password: string) => Promise<void>;
     loginWithGoogle: (redirectTo?: string) => Promise<void>;
+    loginWithDiscord: (
+        code: string,
+        redirectUri: string,
+        redirectTo?: string
+    ) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -170,6 +176,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const loginWithGoogle = useCallback(
         async (redirectTo = '/') => {
+            if (!auth) {
+                throw new ApiRequestError(
+                    0,
+                    'FIREBASE_NOT_CONFIGURED',
+                    'El login con Google no está configurado'
+                );
+            }
             const provider = new GoogleAuthProvider();
 
             try {
@@ -208,7 +221,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     router.push(redirectTo);
                 }
             } finally {
-                await signOut(auth).catch(() => undefined);
+                await signOut(auth as Auth).catch(() => undefined);
+            }
+        },
+        [loadCurrentUser, router]
+    );
+
+    const loginWithDiscord = useCallback(
+        async (code: string, redirectUri: string, redirectTo = '/') => {
+            const data = await apiFetch<AuthResponseDTO>(
+                '/api/auth/oauth/discord',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ code, redirectUri }),
+                    publicRequest: true
+                }
+            );
+            const accessToken = data.accessToken ?? data.token;
+
+            if (!accessToken || !data.expiresAt) {
+                throw new ApiRequestError(
+                    500,
+                    'INVALID_RESPONSE',
+                    'El servidor no devolvió una sesión válida'
+                );
+            }
+
+            saveSession({ token: accessToken, expiresAt: data.expiresAt });
+            setToken(accessToken);
+            setExpiresAt(data.expiresAt);
+
+            await loadCurrentUser();
+
+            if (getStoredSession()) {
+                router.push(redirectTo);
             }
         },
         [loadCurrentUser, router]
@@ -324,6 +370,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             loginWithCredentials,
             register,
             loginWithGoogle,
+            loginWithDiscord,
             logout
         };
     }, [
@@ -339,6 +386,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithCredentials,
         register,
         loginWithGoogle,
+        loginWithDiscord,
         logout
     ]);
 

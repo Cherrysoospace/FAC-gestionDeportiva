@@ -55,7 +55,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register",
-                                "/api/auth/oauth/firebase"
+                                "/api/auth/oauth/firebase",
+                                "/api/auth/oauth/discord"
                         ).permitAll()
                         .anyRequest()
                         .access(dynamicAuthorizationManager)
