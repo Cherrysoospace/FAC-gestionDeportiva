@@ -34,7 +34,12 @@ public class RolePermissionMapper {
         return new PermissionRoleResponseDTO(
                 rolePermission.getId(),
                 rolePermission.getPermission().getId(),
-                new RoleResponseDTO(role.getId(), role.getName(), role.getDescription())
+                new RoleResponseDTO(
+                        role.getId(),
+                        role.getName(),
+                        role.getDescription(),
+                        role.isActive()
+                )
         );
     }
 

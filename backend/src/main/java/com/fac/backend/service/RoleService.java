@@ -5,6 +5,7 @@ import java.util.List;
 import com.fac.backend.dto.role.RoleRequestDTO;
 import com.fac.backend.dto.role.RoleResponseDTO;
 import com.fac.backend.dto.RolePermissionsResponseDTO;
+import com.fac.backend.config.CacheConfig;
 import com.fac.backend.entity.Role;
 import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
@@ -12,6 +13,7 @@ import com.fac.backend.mapper.RoleMapper;
 import com.fac.backend.repository.RoleRepository;
 import com.fac.backend.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -50,6 +52,10 @@ public class RoleService {
         return roleMapper.toPermissionsResponseDTO(role);
     }
 
+    @CacheEvict(
+            cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
+            allEntries = true
+    )
     public RoleResponseDTO update(Long id, RoleRequestDTO dto) {
         Role role = findEntityById(id);
 
@@ -64,6 +70,10 @@ public class RoleService {
         return roleMapper.toResponseDTO(roleRepository.save(role));
     }
 
+    @CacheEvict(
+            cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
+            allEntries = true
+    )
     public void delete(Long id) {
         Role role = findEntityById(id);
         if (userRoleRepository.existsByRoleId(id)) {

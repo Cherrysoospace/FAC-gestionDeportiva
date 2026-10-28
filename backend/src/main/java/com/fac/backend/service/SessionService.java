@@ -36,25 +36,16 @@ public class SessionService {
                         expiresAt,
                         ZoneId.systemDefault()
                 ))
+                .jti(jti)
+                .expiresAt(LocalDateTime.ofInstant(
+                        expiresAt,
+                        ZoneId.systemDefault()
+                ))
+                .createdAt(LocalDateTime.now())
                 .user(user)
                 .build();
 
         sessionRepository.save(session);
-    }
-
-    public SessionResponseDTO create(Long userId, SessionRequestDTO dto) {
-        User user = findUser(userId);
-        if (sessionRepository.existsByToken(dto.getToken())) {
-            throw new ApplicationException(
-                    ErrorCase.ALREADY_EXISTS,
-                    "El token ya estÃ¡ registrado"
-            );
-        }
-
-        Session session = sessionMapper.toEntity(dto);
-        session.setUser(user); //este no tiene el id generado por la base de datos
-        Session savedSession = sessionRepository.save(session); //este ya tiene el id generado por la base de datos
-        return sessionMapper.toResponseDTO(savedSession);
     }
 
     public List<SessionResponseDTO> findAllByUserId(Long userId) {
@@ -68,27 +59,28 @@ public class SessionService {
         return sessionMapper.toResponseDTO(findSession(userId, sessionId));
     }
 
-    public SessionResponseDTO update(
-            Long userId,
-            Long sessionId,
-            SessionRequestDTO dto) {
-
-        findUser(userId);
-        Session session = findSession(userId, sessionId);
-        if (sessionRepository.existsByTokenAndIdNot(dto.getToken(), sessionId)) {
-            throw new ApplicationException(
-                    ErrorCase.ALREADY_EXISTS,
-                    "El token ya estÃ¡ registrado"
-            );
-        }
-
-        sessionMapper.updateEntity(dto, session);
-        Session updatedSession = sessionRepository.save(session);
-        return sessionMapper.toResponseDTO(updatedSession);
-    }
-
     public void delete(Long userId, Long sessionId) {
         sessionRepository.delete(findSession(userId, sessionId));
+    }
+
+    public void invalidate(String jti) {
+        sessionRepository.findByJti(jti).ifPresent(session -> {
+            if (!session.isInvalidated()) {
+                session.setInvalidatedAt(LocalDateTime.now());
+                sessionRepository.save(session);
+            }
+        });
+    }
+
+    public void invalidateSessions(Long userId) {
+        List<Session> activeSessions =
+                sessionRepository.findAllByUserIdAndInvalidatedAtIsNullAndExpiresAtAfter(
+                        userId,
+                        LocalDateTime.now()
+                );
+        LocalDateTime now = LocalDateTime.now();
+        activeSessions.forEach(session -> session.setInvalidatedAt(now));
+        sessionRepository.saveAll(activeSessions);
     }
 
     private User findUser(Long userId) {

@@ -59,7 +59,7 @@ class AuthServiceTest {
         dto.setEmail(user.getEmail());
         dto.setPassword("secret");
 
-        when(userRepository.findByEmail(user.getEmail()))
+        when(userRepository.findByEmailIgnoreCase(user.getEmail()))
                 .thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret", "encoded-password"))
                 .thenReturn(true);
@@ -93,7 +93,7 @@ class AuthServiceTest {
         dto.setEmail(user.getEmail());
         dto.setPassword("secret");
 
-        when(userRepository.findByEmail(user.getEmail()))
+        when(userRepository.findByEmailIgnoreCase(user.getEmail()))
                 .thenReturn(Optional.of(user));
 
         ApplicationException exception = assertThrows(
@@ -115,7 +115,7 @@ class AuthServiceTest {
         dto.setEmail(user.getEmail());
         dto.setPassword("secret");
 
-        when(userRepository.findByEmail(user.getEmail()))
+        when(userRepository.findByEmailIgnoreCase(user.getEmail()))
                 .thenReturn(Optional.of(user));
         when(passwordEncoder.matches("secret", "encoded-password"))
                 .thenReturn(true);

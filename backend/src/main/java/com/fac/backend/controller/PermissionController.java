@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.fac.backend.dto.PermissionRequestDTO;
 import com.fac.backend.dto.PermissionResponseDTO;
+import com.fac.backend.dto.permission.PermissionCatalogResponseDTO;
 import com.fac.backend.service.PermissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,11 @@ public class PermissionController {
     @GetMapping
     public List<PermissionResponseDTO> findAll() {
         return permissionService.findAll();
+    }
+
+    @GetMapping("/catalog")
+    public PermissionCatalogResponseDTO findCatalog() {
+        return permissionService.findCatalog();
     }
 
     @GetMapping("/{id}")

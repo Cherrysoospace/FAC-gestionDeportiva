@@ -1,6 +1,10 @@
 package com.fac.backend.authorization;
 
+import com.fac.backend.entity.Permission;
+import com.fac.backend.security.EffectivePermissionsFilter;
 import com.fac.backend.service.PermissionService;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -23,9 +27,6 @@ public class DynamicAuthorizationManager
             Supplier<? extends Authentication> authenticationSupplier,
             RequestAuthorizationContext context) {
 
-                //El contexto es el que lleva la consulta
-                //El supplier es el que lleva la autenticaciÃ³n (token)
-
         Authentication authentication = authenticationSupplier.get();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -40,15 +41,45 @@ public class DynamicAuthorizationManager
             return new AuthorizationDecision(false);
         }
 
-        String method = context.getRequest().getMethod();
-        String url = context.getRequest().getRequestURI();
+        HttpServletRequest request = context.getRequest();
+        String method = request.getMethod();
+        String url = request.getRequestURI();
 
-        boolean permitted = permissionService.hasPermission(
-                userId,
-                method,
-                url
-        );
+        if ("POST".equals(method) && "/api/auth/logout".equals(url)) {
+            return new AuthorizationDecision(true);
+        }
+
+        if ("GET".equals(method) && "/api/auth/me".equals(url)) {
+            return new AuthorizationDecision(true);
+        }
+
+        List<Permission> effectivePermissions =
+                resolveEffectivePermissions(request);
+
+        boolean permitted = effectivePermissions != null
+                ? effectivePermissions.stream()
+                        .anyMatch(permission -> PermissionMatcher.matches(
+                                permission,
+                                method,
+                                url
+                        ))
+                : permissionService.hasPermission(userId, method, url);
 
         return new AuthorizationDecision(permitted);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Permission> resolveEffectivePermissions(
+            HttpServletRequest request) {
+
+        Object attribute = request.getAttribute(
+                EffectivePermissionsFilter.PERMISSIONS_ATTRIBUTE
+        );
+
+        if (attribute instanceof List<?> permissions) {
+            return (List<Permission>) permissions;
+        }
+
+        return null;
     }
 }

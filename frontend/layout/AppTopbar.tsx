@@ -9,7 +9,7 @@ import { useAuth } from './context/authcontext';
 
 const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     const { layoutConfig, layoutState, onMenuToggle, showProfileSidebar } = useContext(LayoutContext);
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const menubuttonRef = useRef(null);
     const topbarmenuRef = useRef(null);
     const topbarmenubuttonRef = useRef(null);
@@ -42,7 +42,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
                 </button>
                 <button type="button" className="p-link layout-topbar-button">
                     <i className="pi pi-user"></i>
-                    <span>Profile</span>
+                    <span>{user?.name ?? 'Perfil'}</span>
                 </button>
                 <Link href="/documentation">
                     <button type="button" className="p-link layout-topbar-button">

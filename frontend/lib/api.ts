@@ -6,6 +6,7 @@ const API_URL = (
 
 const PUBLIC_PATHS = new Set([
     '/api/auth/login',
+    '/api/auth/register',
     '/api/auth/oauth/firebase'
 ]);
 
@@ -79,14 +80,23 @@ export async function apiFetch<T>(
         let message = `Error ${response.status}`;
 
         try {
-            const body = (await response.json()) as {
-                errorCase?: string;
-                message?: string;
-            };
+            const body = (await response.json()) as Record<string, unknown>;
 
             if (body && typeof body === 'object') {
-                errorCase = body.errorCase ?? errorCase;
-                message = body.message ?? message;
+                if (typeof body.errorCase === 'string') {
+                    errorCase = body.errorCase;
+                }
+                if (typeof body.message === 'string') {
+                    message = body.message;
+                } else {
+                    const fieldMessages = Object.entries(body)
+                        .filter(([field]) => field !== 'errorCase')
+                        .map(([, value]) => typeof value === 'string' ? value : null)
+                        .filter((value): value is string => value !== null);
+                    if (fieldMessages.length > 0) {
+                        message = fieldMessages.join(' ');
+                    }
+                }
             }
         } catch {
             // El backend pudo devolver una respuesta sin JSON.
@@ -102,8 +112,19 @@ export async function apiFetch<T>(
                 typeof window !== 'undefined' &&
                 window.location.pathname !== '/auth/login'
             ) {
-                window.location.href = '/auth/login';
+                const next = encodeURIComponent(
+                    `${window.location.pathname}${window.location.search}`
+                );
+                window.location.href = `/auth/login?next=${next}`;
             }
+        }
+
+        if (
+            response.status === 403 &&
+            path !== '/api/auth/me' &&
+            typeof window !== 'undefined'
+        ) {
+            window.dispatchEvent(new Event('fac:forbidden'));
         }
 
         throw new ApiRequestError(response.status, errorCase, message);

@@ -6,14 +6,33 @@ import { LayoutContext } from './context/layoutcontext';
 import { MenuProvider } from './context/menucontext';
 import Link from 'next/link';
 import { AppMenuItem } from '@/types';
+import { useAuth } from './context/authcontext';
+import { ROLE_PERMISSIONS_VIEW_ENDPOINTS } from '@/lib/security-constants';
 
 const AppMenu = () => {
     const { layoutConfig } = useContext(LayoutContext);
+    const { hasPermissionUrl } = useAuth();
+
+    const canAccessRolePermissions = ROLE_PERMISSIONS_VIEW_ENDPOINTS.every(
+        (endpoint) => hasPermissionUrl(endpoint.url, endpoint.method)
+    );
 
     const model: AppMenuItem[] = [
         {
             label: 'Home',
             items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
+        },
+        {
+            label: 'Seguridad',
+            visible: canAccessRolePermissions,
+            items: [
+                {
+                    label: 'Asignar permisos',
+                    icon: 'pi pi-fw pi-lock',
+                    to: '/roles/permisos',
+                    visible: canAccessRolePermissions
+                }
+            ]
         },
         {
             label: 'UI Components',

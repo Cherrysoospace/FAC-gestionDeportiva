@@ -19,19 +19,24 @@ public class RoleMapper {
         Role role = new Role();
         role.setName(dto.getName());
         role.setDescription(dto.getDescription());
+        role.setActive(dto.getActive() == null || dto.getActive());
         return role;
     }
 
     public void updateEntity(RoleRequestDTO dto, Role role) {
         role.setName(dto.getName());
         role.setDescription(dto.getDescription());
+        if (dto.getActive() != null) {
+            role.setActive(dto.getActive());
+        }
     }
 
     public RoleResponseDTO toResponseDTO(Role role) {
         return new RoleResponseDTO(
                 role.getId(),
                 role.getName(),
-                role.getDescription()
+                role.getDescription(),
+                role.isActive()
         );
     }
 

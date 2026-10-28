@@ -6,6 +6,7 @@ import {
     signOut
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { Toast } from 'primereact/toast';
 import {
     createContext,
     ReactNode,
@@ -13,15 +14,27 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState
 } from 'react';
 import { apiFetch, ApiRequestError } from '@/lib/api';
+import {
+    hasEndpointRequirement,
+    hasPermissionRequirement
+} from '@/lib/access';
 import { auth } from '@/lib/firebase';
+import { fetchCurrentUser } from '@/lib/security-api';
 import {
     clearSession,
     getStoredSession,
     saveSession
 } from '@/lib/session';
+import {
+    CurrentUser,
+    PermissionItem,
+    PermissionOperation,
+    RoleSummary
+} from '@/types/security';
 
 interface AuthResponseDTO {
     accessToken?: string;
@@ -29,12 +42,31 @@ interface AuthResponseDTO {
     expiresAt: string;
 }
 
+export type PermissionsStatus = 'idle' | 'loading' | 'ready' | 'error';
+
 interface AuthContextValue {
     token: string | null;
     expiresAt: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    loginWithGoogle: () => Promise<void>;
+    user: CurrentUser | null;
+    permissions: PermissionItem[];
+    roles: RoleSummary[];
+    permissionsStatus: PermissionsStatus;
+    hasPermission: (
+        resource: string,
+        operation: PermissionOperation
+    ) => boolean;
+    hasPermissionUrl: (url: string, method: string) => boolean;
+    hasRole: (name: string) => boolean;
+    refreshPermissions: () => Promise<void>;
+    loginWithCredentials: (
+        email: string,
+        password: string,
+        redirectTo?: string
+    ) => Promise<void>;
+    register: (name: string, email: string, password: string) => Promise<void>;
+    loginWithGoogle: (redirectTo?: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -42,20 +74,48 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
+    const toast = useRef<Toast>(null);
+    const lastForbiddenToast = useRef(0);
     const [token, setToken] = useState<string | null>(null);
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<CurrentUser | null>(null);
+    const [permissionsStatus, setPermissionsStatus] =
+        useState<PermissionsStatus>('idle');
+
+    const loadCurrentUser = useCallback(async () => {
+        setPermissionsStatus('loading');
+
+        try {
+            const currentUser = await fetchCurrentUser();
+            setUser(currentUser);
+            setPermissionsStatus('ready');
+        } catch (cause) {
+            if (cause instanceof ApiRequestError && cause.status === 401) {
+                setUser(null);
+                setToken(null);
+                setExpiresAt(null);
+                setPermissionsStatus('idle');
+                return;
+            }
+
+            setPermissionsStatus('error');
+        }
+    }, []);
 
     useEffect(() => {
         const stored = getStoredSession();
 
-        if (stored) {
-            setToken(stored.token);
-            setExpiresAt(stored.expiresAt);
+        if (!stored) {
+            setIsLoading(false);
+            setPermissionsStatus('idle');
+            return;
         }
 
-        setIsLoading(false);
-    }, []);
+        setToken(stored.token);
+        setExpiresAt(stored.expiresAt);
+        void loadCurrentUser().finally(() => setIsLoading(false));
+    }, [loadCurrentUser]);
 
     useEffect(() => {
         if (!expiresAt) {
@@ -68,6 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             clearSession();
             setToken(null);
             setExpiresAt(null);
+            setUser(null);
+            setPermissionsStatus('idle');
             return;
         }
 
@@ -75,27 +137,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             clearSession();
             setToken(null);
             setExpiresAt(null);
+            setUser(null);
+            setPermissionsStatus('idle');
         }, remaining);
 
         return () => window.clearTimeout(timeout);
     }, [expiresAt]);
 
-    const loginWithGoogle = useCallback(async () => {
-        const provider = new GoogleAuthProvider();
+    useEffect(() => {
+        const handleForbidden = () => {
+            const now = Date.now();
 
-        try {
-            const result = await signInWithPopup(auth, provider);
-            const idToken = await result.user.getIdToken();
+            if (now - lastForbiddenToast.current > 2000) {
+                lastForbiddenToast.current = now;
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Acceso denegado',
+                    detail: 'No tienes permisos para realizar esta operación.',
+                    life: 4000
+                });
+            }
 
-            const data = await apiFetch<AuthResponseDTO>(
-                '/api/auth/oauth/firebase',
-                {
-                    method: 'POST',
-                    body: JSON.stringify({ idToken }),
-                    publicRequest: true
+            if (getStoredSession()) {
+                void loadCurrentUser();
+            }
+        };
+
+        window.addEventListener('fac:forbidden', handleForbidden);
+        return () =>
+            window.removeEventListener('fac:forbidden', handleForbidden);
+    }, [loadCurrentUser]);
+
+    const loginWithGoogle = useCallback(
+        async (redirectTo = '/') => {
+            const provider = new GoogleAuthProvider();
+
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const idToken = await result.user.getIdToken();
+
+                const data = await apiFetch<AuthResponseDTO>(
+                    '/api/auth/oauth/firebase',
+                    {
+                        method: 'POST',
+                        body: JSON.stringify({ idToken }),
+                        publicRequest: true
+                    }
+                );
+
+                const accessToken = data.accessToken ?? data.token;
+
+                if (!accessToken || !data.expiresAt) {
+                    throw new ApiRequestError(
+                        500,
+                        'INVALID_RESPONSE',
+                        'El servidor no devolvió una sesión válida'
+                    );
                 }
-            );
 
+                saveSession({
+                    token: accessToken,
+                    expiresAt: data.expiresAt
+                });
+                setToken(accessToken);
+                setExpiresAt(data.expiresAt);
+
+                await loadCurrentUser();
+
+                if (getStoredSession()) {
+                    router.push(redirectTo);
+                }
+            } finally {
+                await signOut(auth).catch(() => undefined);
+            }
+        },
+        [loadCurrentUser, router]
+    );
+
+    const loginWithCredentials = useCallback(
+        async (email: string, password: string, redirectTo = '/') => {
+            const data = await apiFetch<AuthResponseDTO>('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password }),
+                publicRequest: true
+            });
             const accessToken = data.accessToken ?? data.token;
 
             if (!accessToken || !data.expiresAt) {
@@ -106,25 +231,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 );
             }
 
-            saveSession({
-                token: accessToken,
-                expiresAt: data.expiresAt
-            });
+            saveSession({ token: accessToken, expiresAt: data.expiresAt });
             setToken(accessToken);
             setExpiresAt(data.expiresAt);
-            router.push('/');
-        } finally {
-            await signOut(auth).catch(() => undefined);
-        }
-    }, [router]);
+
+            await loadCurrentUser();
+
+            if (getStoredSession()) {
+                router.push(redirectTo);
+            }
+        },
+        [loadCurrentUser, router]
+    );
+
+    const register = useCallback(
+        async (name: string, email: string, password: string) => {
+            await apiFetch('/api/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ name, email, password }),
+                publicRequest: true
+            });
+        },
+        []
+    );
 
     const logout = useCallback(async () => {
-        // El backend actual no expone POST /api/auth/logout.
+        const session = getStoredSession();
+
+        if (session) {
+            await apiFetch('/api/auth/logout', { method: 'POST' }).catch(
+                () => undefined
+            );
+        }
+
         clearSession();
         setToken(null);
         setExpiresAt(null);
+        setUser(null);
+        setPermissionsStatus('idle');
         router.push('/auth/login');
     }, [router]);
+
+    const refreshPermissions = useCallback(async () => {
+        if (!getStoredSession()) {
+            return;
+        }
+
+        await loadCurrentUser();
+    }, [loadCurrentUser]);
+
+    const hasPermission = useCallback(
+        (resource: string, operation: PermissionOperation) =>
+            hasPermissionRequirement(user?.permissions ?? [], {
+                resource,
+                operation
+            }),
+        [user]
+    );
+
+    const hasPermissionUrl = useCallback(
+        (url: string, method: string) =>
+            hasEndpointRequirement(user?.permissions ?? [], { url, method }),
+        [user]
+    );
+
+    const hasRole = useCallback(
+        (name: string) =>
+            (user?.roles ?? []).some(
+                (role) => role.name.toLowerCase() === name.toLowerCase()
+            ),
+        [user]
+    );
 
     const value = useMemo<AuthContextValue>(() => {
         const authenticated =
@@ -136,14 +313,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             expiresAt,
             isAuthenticated: authenticated,
             isLoading,
+            user,
+            permissions: user?.permissions ?? [],
+            roles: user?.roles ?? [],
+            permissionsStatus,
+            hasPermission,
+            hasPermissionUrl,
+            hasRole,
+            refreshPermissions,
+            loginWithCredentials,
+            register,
             loginWithGoogle,
             logout
         };
-    }, [token, expiresAt, isLoading, loginWithGoogle, logout]);
+    }, [
+        token,
+        expiresAt,
+        isLoading,
+        user,
+        permissionsStatus,
+        hasPermission,
+        hasPermissionUrl,
+        hasRole,
+        refreshPermissions,
+        loginWithCredentials,
+        register,
+        loginWithGoogle,
+        logout
+    ]);
 
     return (
         <AuthContext.Provider value={value}>
             {children}
+            <Toast ref={toast} />
         </AuthContext.Provider>
     );
 }

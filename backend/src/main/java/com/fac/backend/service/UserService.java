@@ -104,6 +104,16 @@ public class UserService {
         userRoleRepository.save(userRole);
     }
 
+    public void assignDefaultRoleIfPresent(User user) {
+        roleRepository.findByNameIgnoreCase(DEFAULT_OAUTH_ROLE)
+                .ifPresent(role -> {
+                    UserRole userRole = new UserRole();
+                    userRole.setUser(user);
+                    userRole.setRole(role);
+                    userRoleRepository.save(userRole);
+                });
+    }
+
     private void ensureEnabled(User user) {
         if (!user.isEnabled()) {
             throw new ApplicationException(

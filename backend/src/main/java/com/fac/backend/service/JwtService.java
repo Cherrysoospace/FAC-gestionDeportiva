@@ -14,18 +14,20 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @RequiredArgsConstructor
 public class JwtService {
 
-    private static final Duration TOKEN_DURATION = Duration.ofMinutes(15);
-
     private final JwtEncoder jwtEncoder;
+
+    @Value("${security.jwt.expiration-minutes:15}")
+    private long tokenExpirationMinutes;
 
     public IssuedToken generateToken(User user) {
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(TOKEN_DURATION);
+        Instant expiresAt = now.plus(Duration.ofMinutes(tokenExpirationMinutes));
         String jti = UUID.randomUUID().toString();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()

@@ -42,19 +42,23 @@ public class Session {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @Column(
-            name = "token",
-            nullable = false,
-            unique = true,
-            length = 500
-    )
+    @Column(name = "token", length = 500)
     private String token;
 
-    @Column(
-            name = "expiration",
-            nullable = false
-    )
+    @Column(name = "expiration")
     private LocalDateTime expiration;
+
+    @Column(name = "jti", unique = true, length = 36)
+    private String jti;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "invalidated_at")
+    private LocalDateTime invalidatedAt;
 
     @Column(
             name = "code_2fa",
@@ -73,6 +77,14 @@ public class Session {
     private User user;
 
     public boolean isExpired() {
-        return expiration != null && expiration.isBefore(LocalDateTime.now());
+        LocalDateTime sessionExpiration = expiresAt != null
+                ? expiresAt
+                : expiration;
+        return sessionExpiration != null
+                && sessionExpiration.isBefore(LocalDateTime.now());
+    }
+
+    public boolean isInvalidated() {
+        return invalidatedAt != null;
     }
 }

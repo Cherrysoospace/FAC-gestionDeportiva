@@ -28,8 +28,9 @@ public class SessionMapper {
     public SessionResponseDTO toResponseDTO(Session session) {
         return new SessionResponseDTO(
                 session.getId(),
-                session.getToken(),
-                session.getExpiration(),
+                session.getExpiresAt() != null
+                        ? session.getExpiresAt()
+                        : session.getExpiration(),
                 session.getCode2FA()
         );
     }

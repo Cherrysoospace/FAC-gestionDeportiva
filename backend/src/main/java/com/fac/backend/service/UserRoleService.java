@@ -1,5 +1,6 @@
 package com.fac.backend.service;
 
+import com.fac.backend.config.CacheConfig;
 import com.fac.backend.dto.userrole.AssignRoleRequestDTO;
 import com.fac.backend.dto.userrole.RoleUserResponseDTO;
 import com.fac.backend.dto.userrole.UserRoleResponseDTO;
@@ -13,6 +14,7 @@ import com.fac.backend.repository.RoleRepository;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,10 @@ public class UserRoleService {
     private final UserRoleRepository userRoleRepository;
     private final UserRoleMapper userRoleMapper;
 
+    @CacheEvict(
+            cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
+            allEntries = true
+    )
     public UserRoleResponseDTO assign(AssignRoleRequestDTO dto) {
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new ApplicationException(ErrorCase.NOT_FOUND, "Usuario no encontrado"));
@@ -59,6 +65,10 @@ public class UserRoleService {
         return userRoleMapper.toRoleUserResponseDTOList(userRoleRepository.findAllByRoleId(roleId));
     }
 
+    @CacheEvict(
+            cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
+            allEntries = true
+    )
     public void delete(Long userId, Long roleId) {
         userRoleRepository.delete(findAssignment(userId, roleId));
     }
@@ -66,6 +76,6 @@ public class UserRoleService {
     private UserRole findAssignment(Long userId, Long roleId) {
         return userRoleRepository.findByUserIdAndRoleId(userId, roleId)
                 .orElseThrow(() -> new ApplicationException(
-                        ErrorCase.NOT_FOUND, "AsignaciÃ³n de rol no encontrada"));
+                        ErrorCase.NOT_FOUND, "Asignación de rol no encontrada"));
     }
 }

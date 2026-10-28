@@ -50,6 +50,14 @@ public class Role {
     )
     private String description;
 
+    @Column(
+            name = "active",
+            nullable = false,
+            columnDefinition = "TINYINT(1) NOT NULL DEFAULT 1"
+    )
+    @Builder.Default
+    private boolean active = true;
+
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
     @Builder.Default
     private List<UserRole> userRoles = new ArrayList<>();

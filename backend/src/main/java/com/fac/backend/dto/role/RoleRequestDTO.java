@@ -13,7 +13,9 @@ public class RoleRequestDTO {
     @Size(max = 50, message = "El nombre no puede superar 50 caracteres")
     private String name;
 
-    @NotBlank(message = "La descripciÃ³n es obligatoria")
-    @Size(max = 255, message = "La descripciÃ³n no puede superar 255 caracteres")
+    @NotBlank(message = "La descripción es obligatoria")
+    @Size(max = 255, message = "La descripción no puede superar 255 caracteres")
     private String description;
+
+    private Boolean active;
 }

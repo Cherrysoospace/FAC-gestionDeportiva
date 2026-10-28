@@ -32,10 +32,17 @@ public class DatabaseSeeder {
             new PermissionSeed("PUT", "/api/roles/{id}"),
             new PermissionSeed("DELETE", "/api/roles/{id}"),
             new PermissionSeed("GET", "/api/permissions"),
+            new PermissionSeed("GET", "/api/permissions/catalog"),
             new PermissionSeed("POST", "/api/permissions"),
             new PermissionSeed("GET", "/api/permissions/{id}"),
             new PermissionSeed("PUT", "/api/permissions/{id}"),
-            new PermissionSeed("DELETE", "/api/permissions/{id}")
+            new PermissionSeed("DELETE", "/api/permissions/{id}"),
+            new PermissionSeed("GET", "/api/roles/{id}/permissions"),
+            new PermissionSeed("GET", "/api/roles/{id}/summary"),
+            new PermissionSeed("PUT", "/api/roles/{id}/permissions"),
+            new PermissionSeed("GET", "/api/users/{id}/sessions"),
+            new PermissionSeed("GET", "/api/users/{id}/sessions/{id}"),
+            new PermissionSeed("DELETE", "/api/users/{id}/sessions/{id}")
     };
 
     private final UserRepository userRepository;

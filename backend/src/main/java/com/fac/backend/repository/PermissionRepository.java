@@ -24,6 +24,8 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
             JOIN rp.role r
             JOIN r.userRoles ur
             WHERE ur.user.id = :userId
+              AND ur.user.enabled = true
+              AND r.active = true
               AND UPPER(p.method) = UPPER(:method)
               AND p.url = :url
             """)
@@ -32,4 +34,16 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
             @Param("method") String method,
             @Param("url") String url
     );
+
+    @Query("""
+            SELECT DISTINCT p
+            FROM Permission p
+            JOIN p.rolePermissions rp
+            JOIN rp.role r
+            JOIN r.userRoles ur
+            WHERE ur.user.id = :userId
+              AND ur.user.enabled = true
+              AND r.active = true
+            """)
+    List<Permission> findAllByUserId(@Param("userId") Long userId);
 }

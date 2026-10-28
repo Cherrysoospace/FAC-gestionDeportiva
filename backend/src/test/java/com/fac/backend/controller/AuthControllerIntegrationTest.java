@@ -7,6 +7,7 @@ import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.service.AuthService;
 import com.fac.backend.service.JwtService;
+import com.fac.backend.service.SessionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +39,9 @@ class AuthControllerIntegrationTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private SessionService sessionService;
 
     @MockitoBean
     private AuthService authService;
@@ -164,16 +168,52 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    void authenticatedUserWithoutPermissionGets403() throws Exception {
+        User userWithoutPermissions = userRepository
+                .findByEmail("sin-permisos@uc.edu.co")
+                .orElseGet(() -> {
+                    User user = new User();
+                    user.setName("Usuario sin permisos");
+                    user.setEmail("sin-permisos@uc.edu.co");
+                    user.setPassword("not-used");
+                    user.setEnabled(true);
+                    return userRepository.save(user);
+                });
+
+        JwtService.IssuedToken issued = jwtService.generateToken(
+                userWithoutPermissions
+        );
+        sessionService.registerAuthenticatedSession(
+                userWithoutPermissions,
+                issued.jti(),
+                issued.expiresAt()
+        );
+
+        mockMvc.perform(get("/api/roles/1/permissions")
+                        .header(
+                                "Authorization",
+                                "Bearer " + issued.response().accessToken()
+                        ))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void ownHs256JwtIsStillAcceptedByProtectedEndpoint() throws Exception {
         User admin = userRepository.findByEmail("admin@uc.edu.co")
                 .orElseThrow();
 
-        String token = jwtService.generateToken(admin)
-                .response()
-                .accessToken();
+        JwtService.IssuedToken issued = jwtService.generateToken(admin);
+        sessionService.registerAuthenticatedSession(
+                admin,
+                issued.jti(),
+                issued.expiresAt()
+        );
 
         mockMvc.perform(get("/api/users")
-                        .header("Authorization", "Bearer " + token))
+                        .header(
+                                "Authorization",
+                                "Bearer " + issued.response().accessToken()
+                        ))
                 .andExpect(status().isOk());
     }
 
