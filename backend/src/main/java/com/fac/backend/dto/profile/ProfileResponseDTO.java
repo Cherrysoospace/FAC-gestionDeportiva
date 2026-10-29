@@ -13,4 +13,5 @@ public class ProfileResponseDTO {
 
     LocalDate birthDate;
 
+    String photoUrl;
 }

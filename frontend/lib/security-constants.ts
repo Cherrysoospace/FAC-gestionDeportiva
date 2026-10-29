@@ -17,6 +17,24 @@ export const USERS_VIEW_ENDPOINTS: EndpointRequirement[] = [
     { url: '/api/users', method: 'GET' }
 ];
 
+export const USER_DETAIL_ENDPOINTS: EndpointRequirement[] = [
+    { url: '/api/users/{id}', method: 'GET' },
+    { url: '/api/users/{id}/profile', method: 'GET' }
+];
+
+export const USER_CREATE_ENDPOINT: EndpointRequirement = { url: '/api/users', method: 'POST' };
+
+export const USER_UPDATE_ENDPOINT: EndpointRequirement = { url: '/api/users/{id}', method: 'PUT' };
+
+export const USER_DEACTIVATE_ENDPOINT: EndpointRequirement = { url: '/api/users/{id}', method: 'DELETE' };
+
+export const USER_REACTIVATE_ENDPOINT: EndpointRequirement = { url: '/api/users/{id}/status', method: 'PATCH' };
+
+export const USER_PROFILE_EDIT_ENDPOINTS: EndpointRequirement[] = [
+    { url: '/api/users/{id}/profile', method: 'POST' },
+    { url: '/api/users/{id}/profile', method: 'PUT' }
+];
+
 export const USER_ROLES_VIEW_ENDPOINTS: EndpointRequirement[] = [
     { url: '/api/users/{id}/detail-with-roles', method: 'GET' },
     { url: '/api/roles', method: 'GET' },

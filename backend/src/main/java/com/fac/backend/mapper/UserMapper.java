@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
@@ -25,23 +26,29 @@ public class UserMapper {
             String encodedPassword) {
         User user = new User();
 
-        user.setName(dto.getName());
-        user.setEmail(dto.getEmail());
+        user.setName(dto.getName().trim());
+        user.setEmail(normalizeEmail(dto.getEmail()));
         user.setPassword(encodedPassword);
 
         return user;
     }
 
     public void updateBasicData(UpdateUserDTO dto, User user) {
-        user.setName(dto.getName());
-        user.setEmail(dto.getEmail());
+        user.setName(dto.getName().trim());
+        user.setEmail(normalizeEmail(dto.getEmail()));
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     public UserResponseDTO toResponseDTO(User user) {
         return new UserResponseDTO(
                 user.getId(),
                 user.getName(),
-                user.getEmail()
+                user.getEmail(),
+                user.isEnabled(),
+                user.getAuthProvider()
         );
     }
 

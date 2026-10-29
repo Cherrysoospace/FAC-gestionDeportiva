@@ -76,7 +76,9 @@ public class AuthService {
         return new UserResponseDTO(
                 savedUser.getId(),
                 savedUser.getName(),
-                savedUser.getEmail()
+                savedUser.getEmail(),
+                savedUser.isEnabled(),
+                savedUser.getAuthProvider()
         );
     }
 

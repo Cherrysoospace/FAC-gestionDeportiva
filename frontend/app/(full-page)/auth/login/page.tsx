@@ -12,6 +12,7 @@ import { LayoutContext } from '../../../../layout/context/layoutcontext';
 import { useAuth } from '../../../../layout/context/authcontext';
 import { ApiRequestError } from '../../../../lib/api';
 import { startDiscordAuth } from '../../../../lib/discord';
+import { PASSWORD_RESET_SUCCESS_KEY } from '../../../../lib/password-recovery-api';
 
 const LoginPageContent = () => {
     const router = useRouter();
@@ -50,6 +51,10 @@ const LoginPageContent = () => {
         if (typeof window !== 'undefined' && sessionStorage.getItem('registrationSuccess')) {
             setSuccess('Cuenta creada. Inicia sesión.');
             sessionStorage.removeItem('registrationSuccess');
+        }
+        if (typeof window !== 'undefined' && sessionStorage.getItem(PASSWORD_RESET_SUCCESS_KEY)) {
+            setSuccess('Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
+            sessionStorage.removeItem(PASSWORD_RESET_SUCCESS_KEY);
         }
     }, []);
 
@@ -123,7 +128,10 @@ const LoginPageContent = () => {
                         <label htmlFor="email" className="block text-900 font-medium text-xl mb-2">Correo</label>
                         <InputText id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full mb-4" required />
                         <label htmlFor="password" className="block text-900 font-medium text-xl mb-2">Contraseña</label>
-                        <Password inputId="password" value={password} onChange={(event) => setPassword(event.target.value)} toggleMask className="w-full mb-4" inputClassName="w-full p-3" required />
+                        <Password inputId="password" value={password} onChange={(event) => setPassword(event.target.value)} toggleMask className="w-full mb-2" inputClassName="w-full p-3" required />
+                        <div className="flex justify-content-end mb-4">
+                            <Button type="button" label="¿Olvidaste tu contraseña?" link className="p-0" onClick={() => router.push('/auth/forgot-password')} />
+                        </div>
                         <Button type="submit" label="Iniciar sesión" className="w-full p-3 text-xl" loading={loading} disabled={loading || googleLoading || isLoading} />
                     </form>
                     <Button type="button" label="Continuar con Google" icon="pi pi-google" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleGoogleLogin} loading={googleLoading} disabled={loading || googleLoading || isLoading} />

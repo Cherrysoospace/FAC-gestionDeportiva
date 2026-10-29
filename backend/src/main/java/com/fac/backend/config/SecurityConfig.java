@@ -56,8 +56,12 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/oauth/firebase",
-                                "/api/auth/oauth/discord"
+                                "/api/auth/oauth/discord",
+                                "/api/auth/password/forgot",
+                                "/api/auth/password/reset",
+                                "/api/auth/password/reset/validate"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/profile/photos/*").permitAll()
                         .anyRequest()
                         .access(dynamicAuthorizationManager)
                 )

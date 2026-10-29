@@ -37,16 +37,16 @@ public class Profile {
 
     @Column(
             name = "phone",
-            nullable = false,
             length = 30
     )
     private String phone;
 
-    @Column(
-            name = "birth_date",
-            nullable = false
-    )
+    @Column(name = "birth_date")
     private LocalDate birthDate;
+
+    // URL de la foto: archivo subido (/api/profile/photos/...) o la del proveedor OAuth
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
 
     @OneToOne(
             fetch = FetchType.LAZY

@@ -32,7 +32,7 @@ public class UserRoleMapper {
         return new RoleUserResponseDTO(
                 userRole.getId(),
                 userRole.getRole().getId(),
-                new UserResponseDTO(user.getId(), user.getName(), user.getEmail())
+                new UserResponseDTO(user.getId(), user.getName(), user.getEmail(), user.isEnabled(), user.getAuthProvider())
         );
     }
 

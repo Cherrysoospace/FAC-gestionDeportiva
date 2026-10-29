@@ -9,6 +9,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashMap;
@@ -73,6 +75,28 @@ public class GlobalExceptionHandler {
         }
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleMaxUploadSize(
+            MaxUploadSizeExceededException exception) {
+
+        Map<String, String> error = new LinkedHashMap<>();
+        error.put("errorCase", "PAYLOAD_TOO_LARGE");
+        error.put("message", "El archivo supera el tamaño máximo permitido");
+
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(error);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<Map<String, String>> handleMissingPart(
+            MissingServletRequestPartException exception) {
+
+        Map<String, String> error = new LinkedHashMap<>();
+        error.put("errorCase", "INVALID_OPERATION");
+        error.put("message", "Falta el archivo '" + exception.getRequestPartName() + "'");
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)

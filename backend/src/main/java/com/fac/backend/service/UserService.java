@@ -6,6 +6,7 @@ import com.fac.backend.dto.user.UserDetailResponseDTO;
 import com.fac.backend.dto.user.UserResponseDTO;
 import com.fac.backend.dto.user.UserSessionsResponseDTO;
 import com.fac.backend.dto.user.UserRolesResponseDTO;
+import com.fac.backend.entity.Profile;
 import com.fac.backend.entity.Role;
 import com.fac.backend.entity.User;
 import com.fac.backend.entity.UserRole;
@@ -40,6 +41,8 @@ public class UserService {
     private final RoleRepository roleRepository;
 
     private final UserRoleRepository userRoleRepository;
+
+    private final SessionService sessionService;
 
     @Transactional
     public User resolverUsuario(
@@ -80,13 +83,23 @@ public class UserService {
         user.setAuthProvider(proveedor);
         user.setExternalId(uid);
         user.setEnabled(true);
+        attachProviderPhoto(user, foto);
 
-        // TODO: la foto de Firebase no se persiste porque Profile exige
-        // phone y birthDate y no tiene columna photo.
         User savedUser = userRepository.save(user);
         assignDefaultRole(savedUser);
 
         return savedUser;
+    }
+
+    // El perfil se guarda en cascada con el usuario (User.profile, CascadeType.ALL)
+    private void attachProviderPhoto(User user, String photoUrl) {
+        if (photoUrl == null || photoUrl.isBlank()) {
+            return;
+        }
+        Profile profile = new Profile();
+        profile.setPhotoUrl(photoUrl);
+        profile.setUser(user);
+        user.setProfile(profile);
     }
 
     private String alreadyRegisteredMessage(String authProvider) {
@@ -141,7 +154,7 @@ public class UserService {
     }
 
     public UserResponseDTO create(CreateUserDTO dto) {
-        if (userRepository.existsByEmail(dto.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(dto.getEmail().trim())) {
             throw new ApplicationException(
                 ErrorCase.ALREADY_EXISTS,
                     "Ya existe un usuario con este email"
@@ -200,16 +213,30 @@ public class UserService {
 
     public UserResponseDTO update(Long id, UpdateUserDTO dto) {
         User user = findUser(id);
-        if (userRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
+        if (userRepository.existsByEmailIgnoreCaseAndIdNot(dto.getEmail().trim(), id)) {
             throw new ApplicationException(
                 ErrorCase.ALREADY_EXISTS,
                     "El email pertenece a otro usuario"
             );
         }
+
+        boolean changesPassword = dto.getPassword() != null
+                && !dto.getPassword().isBlank();
+
+        // Las cuentas OAuth no tienen contraseña en la plataforma (HU-SE-08)
+        if (changesPassword
+                && !User.LOCAL_AUTH_PROVIDER.equals(user.getAuthProvider())) {
+            throw new ApplicationException(
+                    ErrorCase.INVALID_OPERATION,
+                    "Este usuario inicia sesión con "
+                            + AuthProviders.label(user.getAuthProvider())
+                            + " y no tiene contraseña en la plataforma"
+            );
+        }
+
         userMapper.updateBasicData(dto, user);
 
-        if (dto.getPassword() != null
-                && !dto.getPassword().isBlank()) {
+        if (changesPassword) {
             String encodedPassword = passwordEncoder.encode(
                     dto.getPassword()
             );
@@ -219,8 +246,39 @@ public class UserService {
         User updatedUser = userRepository.save(user);
         return userMapper.toResponseDTO(updatedUser);
     }
-    public void delete(Long id) {
+
+    /**
+     * HU-SE-01: el usuario no se borra físicamente; se desactiva para
+     * conservar su historial (sesiones, roles, perfil). Las cascadas de
+     * User solo alcanzan sus propios datos, nunca roles ni permisos.
+     */
+    @Transactional
+    public void delete(Long id, Long actorUserId) {
+        changeStatus(id, false, actorUserId);
+    }
+
+    @Transactional
+    public UserResponseDTO changeStatus(
+            Long id,
+            boolean enabled,
+            Long actorUserId) {
+
         User user = findUser(id);
-        userRepository.delete(user);
+
+        if (!enabled && id.equals(actorUserId)) {
+            throw new ApplicationException(
+                    ErrorCase.INVALID_OPERATION,
+                    "No puedes desactivar tu propio usuario"
+            );
+        }
+
+        user.setEnabled(enabled);
+        User savedUser = userRepository.save(user);
+
+        if (!enabled) {
+            sessionService.invalidateSessions(id);
+        }
+
+        return userMapper.toResponseDTO(savedUser);
     }
 }

@@ -8,7 +8,10 @@ const PUBLIC_PATHS = new Set([
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/oauth/firebase',
-    '/api/auth/oauth/discord'
+    '/api/auth/oauth/discord',
+    '/api/auth/password/forgot',
+    '/api/auth/password/reset',
+    '/api/auth/password/reset/validate'
 ]);
 
 export class ApiRequestError extends Error {
@@ -25,6 +28,12 @@ export class ApiRequestError extends Error {
 
 export interface ApiFetchOptions extends RequestInit {
     publicRequest?: boolean;
+}
+
+// Las rutas relativas del backend (ej. /api/profile/photos/x.png) se completan
+// con su dominio; las URL absolutas (fotos de Google, GitHub...) se dejan igual.
+export function resolveApiUrl(pathOrUrl: string): string {
+    return pathOrUrl.startsWith('/') ? `${API_URL}${pathOrUrl}` : pathOrUrl;
 }
 
 export function isPublicPath(path: string): boolean {

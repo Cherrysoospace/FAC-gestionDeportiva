@@ -37,3 +37,6 @@ src/main/resources/application.properties
 
 target_classes/
 target_test-classes/
+
+### Fotos de perfil subidas en local ###
+uploads/

@@ -84,6 +84,27 @@ export interface UserSummary {
     email: string;
 }
 
+/** Usuario como lo devuelve /api/users (HU-SE-01). */
+export interface UserAccount extends UserSummary {
+    enabled: boolean;
+    authProvider: string;
+}
+
+export interface UserFormValues {
+    name: string;
+    email: string;
+    /** Obligatoria al crear; al editar, vacía significa "no cambiar". */
+    password: string;
+}
+
+/** Perfil de un usuario visto por el administrador. */
+export interface UserProfileData {
+    id: number;
+    phone: string | null;
+    birthDate: string | null;
+    photoUrl: string | null;
+}
+
 export interface UserRoleAssignment {
     id: number;
     userId: number;

@@ -25,7 +25,7 @@ public abstract class BaseUserDTO {
             message = "El email es obligatorio"
     )
     @Email(
-            message = "El email no tiene un formato vÃ¡lido"
+            message = "El email no tiene un formato válido"
     )
     private String email;
 }

@@ -20,6 +20,8 @@ import java.util.function.Supplier;
 public class DynamicAuthorizationManager
         implements AuthorizationManager<RequestAuthorizationContext> {
 
+    private static final String OWN_PROFILE_PATH = "/api/profile/me";
+
     private final PermissionService permissionService;
 
     @Override
@@ -49,6 +51,12 @@ public class DynamicAuthorizationManager
             return new AuthorizationDecision(true);
         }
 
+        // Perfil propio: el id sale del token, así que todo usuario autenticado
+        // puede gestionar el suyo y nunca el de otro (HU-SE-02).
+        if (isOwnProfileRequest(url)) {
+            return new AuthorizationDecision(true);
+        }
+
         if ("GET".equals(method) && "/api/auth/me".equals(url)) {
             return new AuthorizationDecision(true);
         }
@@ -66,6 +74,11 @@ public class DynamicAuthorizationManager
                 : permissionService.hasPermission(userId, method, url);
 
         return new AuthorizationDecision(permitted);
+    }
+
+    private boolean isOwnProfileRequest(String url) {
+        return OWN_PROFILE_PATH.equals(url)
+                || url.startsWith(OWN_PROFILE_PATH + "/");
     }
 
     @SuppressWarnings("unchecked")
