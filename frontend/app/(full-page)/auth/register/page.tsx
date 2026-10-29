@@ -9,6 +9,7 @@ import { Message } from 'primereact/message';
 import { Password } from 'primereact/password';
 import { classNames } from 'primereact/utils';
 import { LayoutContext } from '../../../../layout/context/layoutcontext';
+import { startDiscordAuth } from '../../../../lib/discord';
 import { useAuth } from '../../../../layout/context/authcontext';
 import { ApiRequestError } from '../../../../lib/api';
 
@@ -37,6 +38,10 @@ export default function RegisterPage() {
         } finally {
             setProviderLoading(false);
         }
+    };
+
+    const handleDiscord = () => {
+        setError(startDiscordAuth('/'));
     };
 
     useEffect(() => {
@@ -97,6 +102,7 @@ export default function RegisterPage() {
                     </form>
                     <Button type="button" label="Continuar con Google" icon="pi pi-google" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={() => void handleSocialLogin(() => loginWithGoogle(), setGoogleLoading, 'Google')} loading={googleLoading} disabled={busy} />
                     <Button type="button" label="Continuar con GitHub" icon="pi pi-github" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={() => void handleSocialLogin(() => loginWithGithub(), setGithubLoading, 'GitHub')} loading={githubLoading} disabled={busy} />
+                    <Button type="button" label="Continuar con Discord" icon="pi pi-discord" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleDiscord} disabled={busy} />
                     <Button type="button" label="¿Ya tienes cuenta? Inicia sesión" link className="w-full mt-3" onClick={() => router.push('/auth/login')} />
                 </div>
             </div>

@@ -11,6 +11,7 @@ import { classNames } from 'primereact/utils';
 import { LayoutContext } from '../../../../layout/context/layoutcontext';
 import { useAuth } from '../../../../layout/context/authcontext';
 import { ApiRequestError } from '../../../../lib/api';
+import { startDiscordAuth } from '../../../../lib/discord';
 
 const LoginPageContent = () => {
     const router = useRouter();
@@ -99,26 +100,7 @@ const LoginPageContent = () => {
     };
 
     const handleDiscordLogin = () => {
-        const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
-
-        if (!clientId) {
-            setError('Falta NEXT_PUBLIC_DISCORD_CLIENT_ID');
-            return;
-        }
-
-        const state = crypto.randomUUID();
-        sessionStorage.setItem('discordOAuthState', state);
-        sessionStorage.setItem('discordOAuthNext', nextPath);
-
-        const params = new URLSearchParams({
-            client_id: clientId,
-            redirect_uri: `${window.location.origin}/auth/discord/callback`,
-            response_type: 'code',
-            scope: 'identify email',
-            state
-        });
-
-        window.location.href = `https://discord.com/oauth2/authorize?${params}`;
+        setError(startDiscordAuth(nextPath));
     };
 
     const containerClassName = classNames(
