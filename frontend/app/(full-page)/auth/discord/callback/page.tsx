@@ -3,9 +3,10 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Button } from 'primereact/button';
-import { Message } from 'primereact/message';
 import { useAuth } from '../../../../../layout/context/authcontext';
 import { ApiRequestError } from '../../../../../lib/api';
+import AuthCard from '../../components/AuthCard';
+import AuthLoading from '../../components/AuthLoading';
 
 const DiscordCallbackContent = () => {
     const router = useRouter();
@@ -32,7 +33,7 @@ const DiscordCallbackContent = () => {
             return;
         }
         if (!state || state !== expectedState) {
-            setError('Estado OAuth inválido. Intenta de nuevo.');
+            setError('La solicitud de inicio de sesión no es válida o expiró. Intenta de nuevo.');
             return;
         }
 
@@ -54,23 +55,20 @@ const DiscordCallbackContent = () => {
         });
     }, [searchParams, loginWithDiscord]);
 
+    if (!error) {
+        return <AuthLoading message="Conectando con Discord…" />;
+    }
+
     return (
-        <div className="surface-ground flex flex-column align-items-center justify-content-center min-h-screen gap-3 p-4">
-            {error ? (
-                <>
-                    <Message severity="error" text={error} />
-                    <Button label="Volver al login" onClick={() => router.replace('/auth/login')} />
-                </>
-            ) : (
-                <i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem' }} />
-            )}
-        </div>
+        <AuthCard icon="pi-discord" tone="danger" title="No pudimos iniciar sesión" subtitle={error}>
+            <Button icon="pi pi-arrow-left" label="Volver a iniciar sesión" className="w-full" onClick={() => router.replace('/auth/login')} />
+        </AuthCard>
     );
 };
 
 export default function DiscordCallbackPage() {
     return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<AuthLoading message="Conectando con Discord…" />}>
             <DiscordCallbackContent />
         </Suspense>
     );

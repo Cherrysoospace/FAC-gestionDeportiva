@@ -1,16 +1,13 @@
-/* eslint-disable @next/next/no-img-element */
-
-import React, { useContext } from 'react';
-import { LayoutContext } from './context/layoutcontext';
+import React from 'react';
+import BrandLogo, { APP_NAME } from '@/components/ui/BrandLogo';
 
 const AppFooter = () => {
-    const { layoutConfig } = useContext(LayoutContext);
-
     return (
-        <div className="layout-footer">
-            <img src={`/layout/images/logo-${layoutConfig.colorScheme === 'light' ? 'dark' : 'white'}.svg`} alt="Logo" height="20" className="mr-2" />
-            by
-            <span className="font-medium ml-2">PrimeReact</span>
+        <div className="layout-footer flex-wrap gap-2 text-600 text-sm">
+            <BrandLogo size="sm" />
+            <span>
+                <span className="font-medium text-900">{APP_NAME}</span> · Universidad de Caldas · {new Date().getFullYear()}
+            </span>
         </div>
     );
 };

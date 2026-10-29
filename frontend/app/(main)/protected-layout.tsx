@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
 import Layout from '@/layout/layout';
 import { useAuth } from '@/layout/context/authcontext';
+import LoadingState from '@/components/ui/LoadingState';
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
     const { isAuthenticated, isLoading } = useAuth();
@@ -18,11 +19,7 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
     }, [isAuthenticated, isLoading, pathname, router]);
 
     if (isLoading) {
-        return (
-            <div className="flex align-items-center justify-content-center min-h-screen">
-                <i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem' }}></i>
-            </div>
-        );
+        return <LoadingState fullScreen message="Verificando tu sesión…" />;
     }
 
     if (!isAuthenticated) {

@@ -58,7 +58,7 @@ export default function UserFormDialog({ visible, user, onHide, onSubmit }: User
     };
 
     return (
-        <Dialog header={mode === 'create' ? 'Nuevo usuario' : 'Editar usuario'} visible={visible} onHide={onHide} style={{ width: 'min(95vw, 32rem)' }} modal>
+        <Dialog header={mode === 'create' ? 'Nuevo usuario' : 'Editar usuario'} visible={visible} onHide={onHide} className="w-full md:w-8 lg:w-6 xl:w-4" breakpoints={{ '640px': '95vw' }} modal>
             <form onSubmit={handleSubmit} className="p-fluid" noValidate>
                 {serverError && <Message severity="error" text={serverError} className="w-full mb-3" />}
 

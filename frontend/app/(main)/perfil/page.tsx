@@ -43,7 +43,7 @@ export default function MyProfilePage() {
             <Toast ref={toast} />
             <ConfirmDialog />
             <div className="col-12">
-                <PageHeader title="Mi perfil" subtitle="Mantén actualizados tus datos personales" breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Mi perfil' }]} />
+                <PageHeader title="Mi perfil" subtitle="Mantén actualizados tus datos personales y tu foto de perfil." breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Mi perfil' }]} />
             </div>
 
             {loadError && (

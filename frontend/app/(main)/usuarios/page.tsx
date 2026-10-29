@@ -118,8 +118,8 @@ function UsersContent() {
             <ConfirmDialog />
             <PageHeader
                 title="Usuarios"
-                subtitle="Registra, consulta, edita y desactiva usuarios, y accede a su perfil y sus roles."
-                breadcrumb={[{ label: 'Usuarios' }]}
+                subtitle="Registra, consulta, edita y desactiva usuarios. Desde aquí también puedes ver su perfil y sus roles."
+                breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Usuarios' }]}
                 actions={canCreate && <Button label="Nuevo usuario" icon="pi pi-user-plus" onClick={() => setDialog({ visible: true, user: null })} />}
             />
 

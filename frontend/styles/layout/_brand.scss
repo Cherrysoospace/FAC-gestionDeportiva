@@ -1,0 +1,40 @@
+/* Identidad visual de FAC – Gestión Deportiva sobre el layout de Sakai.
+   Solo usa variables del tema activo para que funcione en modo claro y oscuro. */
+
+.layout-topbar .layout-topbar-logo {
+    padding: 0.25rem 0.5rem;
+}
+
+.layout-menu .layout-root-menuitem > .layout-menuitem-root-text {
+    color: var(--text-color-secondary);
+    letter-spacing: 0.04em;
+}
+
+.layout-menu ul a.active-route {
+    background-color: var(--surface-hover);
+    color: var(--text-color);
+    box-shadow: inset 4px 0 0 var(--primary-color);
+
+    .layout-menuitem-icon {
+        color: var(--primary-color);
+    }
+}
+
+/* Foco visible para quien navega con teclado */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+    @include focused();
+}
+
+.layout-footer {
+    padding-bottom: 0.5rem;
+}
+
+/* Fondo de las pantallas de autenticación con un degradado suave del color primario */
+.auth-background {
+    background:
+        radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--primary-color) 14%, transparent), transparent 45%),
+        radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--primary-color) 10%, transparent), transparent 40%),
+        var(--surface-ground);
+}

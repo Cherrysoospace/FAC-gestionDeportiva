@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <AuthCard title="Recuperar contraseña" subtitle="Te enviaremos un enlace para crear una nueva">
+        <AuthCard title="Recuperar contraseña" subtitle="Escribe tu correo y te enviaremos un enlace para crear una contraseña nueva">
             {error && <Message severity="error" text={error} className="w-full mb-4" />}
 
             {status === 'sent' ? (
@@ -31,14 +31,17 @@ export default function ForgotPasswordPage() {
             ) : (
                 <form onSubmit={handleSubmit}>
                     <label htmlFor="email" className="block text-900 font-medium mb-2">
-                        Correo
+                        Correo electrónico
                     </label>
-                    <InputText id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full mb-4" autoFocus required />
-                    <Button type="submit" label="Enviar enlace" className="w-full p-3 text-xl" loading={status === 'sending'} />
+                    <span className="p-input-icon-left w-full mb-4">
+                        <i className="pi pi-envelope" aria-hidden="true" />
+                        <InputText id="email" type="email" autoComplete="email" placeholder="tucorreo@ejemplo.com" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full" autoFocus required />
+                    </span>
+                    <Button type="submit" label="Enviar enlace" icon="pi pi-send" className="w-full" loading={status === 'sending'} />
                 </form>
             )}
 
-            <Button type="button" label="Volver a iniciar sesión" link className="w-full mt-3" onClick={() => router.push('/auth/login')} />
+            <Button type="button" label="Volver a iniciar sesión" icon="pi pi-arrow-left" link className="w-full mt-3" onClick={() => router.push('/auth/login')} />
         </AuthCard>
     );
 }

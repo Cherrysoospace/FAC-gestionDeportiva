@@ -88,3 +88,15 @@
     white-space: nowrap;
     border: 0;
 }
+
+.matrixArea {
+    transition: opacity 150ms ease-in-out;
+}
+
+.matrixAreaBusy {
+    opacity: 0.6;
+}
+
+.coverageBar {
+    height: 0.5rem;
+}

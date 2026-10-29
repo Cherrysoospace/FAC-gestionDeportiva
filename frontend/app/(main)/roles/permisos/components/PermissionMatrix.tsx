@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { Checkbox } from 'primereact/checkbox';
 import { Message } from 'primereact/message';
+import EmptyState from '@/components/ui/EmptyState';
+import SearchInput from '@/components/ui/SearchInput';
 import {
     PermissionCatalog,
     PermissionItem,
@@ -46,6 +48,25 @@ function permissionsForOperation(
     );
 }
 
+// Deja solo los recursos cuyo nombre (o el de su módulo) contiene el texto buscado.
+function filterModules(modules: PermissionModule[], query: string): PermissionModule[] {
+    const term = query.trim().toLowerCase();
+    if (!term) return modules;
+
+    return modules
+        .map((permissionModule) =>
+            permissionModule.name.toLowerCase().includes(term)
+                ? permissionModule
+                : {
+                      ...permissionModule,
+                      resources: permissionModule.resources.filter((resource) =>
+                          resource.name.toLowerCase().includes(term)
+                      )
+                  }
+        )
+        .filter((permissionModule) => permissionModule.resources.length > 0);
+}
+
 export default function PermissionMatrix({
     catalog,
     selectedIds,
@@ -53,6 +74,15 @@ export default function PermissionMatrix({
     onToggle
 }: PermissionMatrixProps) {
     const [activeModules, setActiveModules] = useState<number[]>([]);
+    const [query, setQuery] = useState('');
+    const visibleModules = useMemo(
+        () => filterModules(catalog?.modules ?? [], query),
+        [catalog, query]
+    );
+    // Al buscar se despliegan todos los módulos con coincidencias
+    const activeIndex = query.trim()
+        ? visibleModules.map((_, index) => index)
+        : activeModules;
 
     useEffect(() => {
         setActiveModules(
@@ -77,10 +107,10 @@ export default function PermissionMatrix({
     if (!catalog || catalog.modules.length === 0) {
         return (
             <div className="card">
-                <Message
-                    severity="info"
-                    className="w-full"
-                    text="El catálogo de permisos está vacío. Verifica que los permisos estén registrados en el sistema."
+                <EmptyState
+                    icon="pi-key"
+                    title="Todavía no hay permisos registrados"
+                    description="Cuando se registren permisos en el sistema podrás asignarlos a los roles desde aquí."
                 />
             </div>
         );
@@ -88,13 +118,21 @@ export default function PermissionMatrix({
 
     return (
         <div className="card">
-            <div className="flex flex-column gap-1 mb-3">
-                <h5 className="m-0">Matriz de permisos del rol</h5>
-                <span className="text-600 text-sm">
-                    Marca las operaciones que podrá realizar el rol en cada
-                    recurso. Los contadores junto a una casilla indican cuántos
-                    permisos del grupo están asignados.
-                </span>
+            <div className="flex flex-column md:flex-row md:align-items-start md:justify-content-between gap-3 mb-3">
+                <div className="flex flex-column gap-1">
+                    <h5 className="m-0">Permisos del rol</h5>
+                    <span className="text-600 text-sm">
+                        Marca las acciones que podrá realizar el rol en cada
+                        sección. El contador junto a una casilla indica cuántos
+                        permisos del grupo están asignados.
+                    </span>
+                </div>
+                <SearchInput
+                    value={query}
+                    onChange={setQuery}
+                    ariaLabel="Buscar permisos por recurso o módulo"
+                    placeholder="Buscar recurso o módulo"
+                />
             </div>
 
             {selectedIds.size === 0 && (
@@ -105,10 +143,19 @@ export default function PermissionMatrix({
                 />
             )}
 
+            {visibleModules.length === 0 && (
+                <EmptyState
+                    icon="pi-search"
+                    title="Ningún recurso coincide con la búsqueda."
+                    description="Prueba con otro nombre o borra el texto para ver todos los permisos."
+                />
+            )}
+
             <Accordion
                 multiple
-                activeIndex={activeModules}
+                activeIndex={activeIndex}
                 onTabChange={(event) => {
+                    if (query.trim()) return;
                     const index = event.index;
                     setActiveModules(
                         Array.isArray(index)
@@ -119,7 +166,7 @@ export default function PermissionMatrix({
                     );
                 }}
             >
-                {catalog.modules.map((permissionModule) => {
+                {visibleModules.map((permissionModule) => {
                     const stats = moduleStats.get(permissionModule.name);
 
                     return (

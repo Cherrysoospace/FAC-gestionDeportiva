@@ -7,6 +7,7 @@ import { Message } from 'primereact/message';
 import { Password } from 'primereact/password';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import AuthCard from '../components/AuthCard';
+import AuthLoading from '../components/AuthLoading';
 import PasswordRulesList from '@/components/ui/PasswordRulesList';
 import { useResetPassword } from './useResetPassword';
 import { PASSWORD_RESET_SUCCESS_KEY } from '@/lib/password-recovery-api';
@@ -31,7 +32,7 @@ const ResetPasswordContent = () => {
         return (
             <AuthCard title="Restablecer contraseña">
                 <div className="flex justify-content-center">
-                    <ProgressSpinner style={{ width: '3rem', height: '3rem' }} />
+                    <ProgressSpinner className="w-3rem h-3rem" strokeWidth="4" aria-label="Validando el enlace" />
                 </div>
             </AuthCard>
         );
@@ -39,9 +40,9 @@ const ResetPasswordContent = () => {
 
     if (status === 'invalid') {
         return (
-            <AuthCard title="Restablecer contraseña">
+            <AuthCard icon="pi-link" tone="danger" title="Enlace no válido">
                 <Message severity="error" text={error ?? ''} className="w-full mb-4" />
-                <Button type="button" label="Solicitar un nuevo enlace" className="w-full p-3 text-xl" onClick={() => router.push('/auth/forgot-password')} />
+                <Button type="button" label="Solicitar un nuevo enlace" icon="pi pi-envelope" className="w-full" onClick={() => router.push('/auth/forgot-password')} />
                 <Button type="button" label="Volver a iniciar sesión" link className="w-full mt-3" onClick={() => router.push('/auth/login')} />
             </AuthCard>
         );
@@ -54,16 +55,18 @@ const ResetPasswordContent = () => {
                 <label htmlFor="newPassword" className="block text-900 font-medium mb-2">
                     Nueva contraseña
                 </label>
-                <Password inputId="newPassword" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} toggleMask feedback={false} className="w-full mb-2" inputClassName="w-full p-3" autoFocus required />
-                <PasswordRulesList password={newPassword} unmetRules={unmetRules} />
+                <Password inputId="newPassword" aria-describedby="new-password-rules" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} toggleMask feedback={false} className="w-full mb-2" inputClassName="w-full" autoComplete="new-password" autoFocus required />
+                <div id="new-password-rules">
+                    <PasswordRulesList password={newPassword} unmetRules={unmetRules} />
+                </div>
 
                 <label htmlFor="confirmation" className="block text-900 font-medium mb-2 mt-3">
                     Confirmar contraseña
                 </label>
-                <Password inputId="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} toggleMask feedback={false} className="w-full mb-2" inputClassName="w-full p-3" required />
+                <Password inputId="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} toggleMask feedback={false} className="w-full mb-2" inputClassName="w-full" autoComplete="new-password" required />
                 {confirmation.length > 0 && !passwordsMatch && <small className="p-error block mb-2">Las contraseñas no coinciden</small>}
 
-                <Button type="submit" label="Guardar contraseña" className="w-full p-3 text-xl mt-3" loading={status === 'saving'} disabled={!canSubmit} />
+                <Button type="submit" label="Guardar contraseña" icon="pi pi-check" className="w-full mt-3" loading={status === 'saving'} disabled={!canSubmit} />
             </form>
         </AuthCard>
     );
@@ -71,7 +74,7 @@ const ResetPasswordContent = () => {
 
 export default function ResetPasswordPage() {
     return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<AuthLoading />}>
             <ResetPasswordContent />
         </Suspense>
     );

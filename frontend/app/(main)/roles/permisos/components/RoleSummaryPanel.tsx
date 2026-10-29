@@ -83,8 +83,7 @@ export default function RoleSummaryPanel({
             <ProgressBar
                 value={percentage}
                 showValue={false}
-                style={{ height: '0.5rem' }}
-                className="mb-4"
+                className={`mb-4 ${styles.coverageBar}`}
             />
 
             <div className="grid grid-nogutter mb-3">

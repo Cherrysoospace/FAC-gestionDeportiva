@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Avatar } from 'primereact/avatar';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
-import { resolveApiUrl } from '@/lib/api';
-import { getInitials } from '@/lib/format';
+import ProfileAvatar from '@/components/ui/ProfileAvatar';
 import { authProviderLabel, PROFILE_PHOTO_ACCEPT } from '@/lib/profile-rules';
 import { MyProfile } from '@/types/profile';
 
@@ -28,11 +26,7 @@ export default function ProfilePhotoCard({ profile, busy, onUpload, onRemove }: 
 
     return (
         <div className="card flex flex-column align-items-center text-center h-full">
-            {profile.photoUrl ? (
-                <Avatar image={resolveApiUrl(profile.photoUrl)} shape="circle" className="mb-3" style={{ width: '8rem', height: '8rem' }} imageAlt={`Foto de ${profile.name}`} />
-            ) : (
-                <Avatar label={getInitials(profile.name)} shape="circle" className="mb-3 text-4xl bg-primary" style={{ width: '8rem', height: '8rem' }} />
-            )}
+            <ProfileAvatar name={profile.name} photoUrl={profile.photoUrl} size="xl" className="mb-3" />
 
             <div className="text-900 text-xl font-medium">{profile.name}</div>
             <div className="text-600 mb-2">{profile.email}</div>

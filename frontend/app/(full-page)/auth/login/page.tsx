@@ -1,161 +1,66 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import React, { Suspense, useContext, useEffect, useState } from 'react';
+import Link from 'next/link';
+import React, { Suspense } from 'react';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Message } from 'primereact/message';
 import { Password } from 'primereact/password';
-import { classNames } from 'primereact/utils';
-import { LayoutContext } from '../../../../layout/context/layoutcontext';
-import { useAuth } from '../../../../layout/context/authcontext';
-import { ApiRequestError } from '../../../../lib/api';
-import { startDiscordAuth } from '../../../../lib/discord';
-import { PASSWORD_RESET_SUCCESS_KEY } from '../../../../lib/password-recovery-api';
+import AuthCard from '../components/AuthCard';
+import AuthLoading from '../components/AuthLoading';
+import SocialLoginButtons from '../components/SocialLoginButtons';
+import { useLogin } from './useLogin';
 
 const LoginPageContent = () => {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const { layoutConfig } = useContext(LayoutContext);
-    const {
-        loginWithCredentials,
-        loginWithGoogle,
-        loginWithGithub,
-        isAuthenticated,
-        isLoading
-    } = useAuth();
+    const { email, setEmail, password, setPassword, submitting, busy, error, success, submit, socialProvider, signInWith } = useLogin();
 
-    const requestedDestination = searchParams.get('next') || '/';
-    const nextPath =
-        requestedDestination.startsWith('/') &&
-        !requestedDestination.startsWith('//') &&
-        !requestedDestination.includes('\\')
-            ? requestedDestination
-            : '/';
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [googleLoading, setGoogleLoading] = useState(false);
-    const [githubLoading, setGithubLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!isLoading && isAuthenticated) {
-            router.replace(nextPath);
-        }
-    }, [isAuthenticated, isLoading, nextPath, router]);
-
-    useEffect(() => {
-        if (typeof window !== 'undefined' && sessionStorage.getItem('registrationSuccess')) {
-            setSuccess('Cuenta creada. Inicia sesión.');
-            sessionStorage.removeItem('registrationSuccess');
-        }
-        if (typeof window !== 'undefined' && sessionStorage.getItem(PASSWORD_RESET_SUCCESS_KEY)) {
-            setSuccess('Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
-            sessionStorage.removeItem(PASSWORD_RESET_SUCCESS_KEY);
-        }
-    }, []);
-
-    const handleLogin = async (event: React.FormEvent) => {
+    const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
-        setError(null);
-        setLoading(true);
-        try {
-            await loginWithCredentials(email, password, nextPath);
-        } catch (cause) {
-            if (cause instanceof ApiRequestError && cause.status === 0) {
-                setError('No se pudo conectar con el servidor');
-            } else if (cause instanceof ApiRequestError && cause.status === 403) {
-                setError('Tu usuario está deshabilitado');
-            } else if (cause instanceof ApiRequestError && cause.status === 401) {
-                // El backend indica si la cuenta usa Google, GitHub o Discord
-                setError(cause.message);
-            } else {
-                setError('Credenciales incorrectas');
-            }
-        } finally {
-            setLoading(false);
-        }
+        void submit();
     };
-
-    const handleGithubLogin = async () => {
-        setError('');
-        setGithubLoading(true);
-        try {
-            await loginWithGithub(nextPath);
-        } catch (cause) {
-            setError(cause instanceof ApiRequestError ? cause.message : 'No se pudo iniciar sesión con GitHub');
-        } finally {
-            setGithubLoading(false);
-        }
-    };
-
-    const handleGoogleLogin = async () => {
-        setError(null);
-        setGoogleLoading(true);
-        try {
-            await loginWithGoogle(nextPath);
-        } catch (cause) {
-            setError(cause instanceof ApiRequestError ? cause.message : 'No se pudo iniciar sesión con Google');
-        } finally {
-            setGoogleLoading(false);
-        }
-    };
-
-    const handleDiscordLogin = () => {
-        setError(startDiscordAuth(nextPath));
-    };
-
-    const containerClassName = classNames(
-        'surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden',
-        { 'p-input-filled': layoutConfig.inputStyle === 'filled' }
-    );
 
     return (
-        <div className={containerClassName}>
-            <div className="flex flex-column align-items-center justify-content-center">
-                <img src={`/layout/images/logo-${layoutConfig.colorScheme === 'light' ? 'dark' : 'white'}.svg`} alt="Logo" className="mb-5 w-6rem flex-shrink-0" />
-                <div className="surface-card py-8 px-5 sm:px-8" style={{ borderRadius: '24px', minWidth: 'min(90vw, 32rem)' }}>
-                    <div className="text-center mb-5">
-                        <div className="text-900 text-3xl font-medium mb-3">Iniciar sesión</div>
-                        <span className="text-600 font-medium">Accede con tu correo y contraseña</span>
-                    </div>
-                    {success && <Message severity="success" text={success} className="w-full mb-4" />}
-                    {error && <Message severity="error" text={error} className="w-full mb-4" />}
-                    <form onSubmit={handleLogin}>
-                        <label htmlFor="email" className="block text-900 font-medium text-xl mb-2">Correo</label>
-                        <InputText id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full mb-4" required />
-                        <label htmlFor="password" className="block text-900 font-medium text-xl mb-2">Contraseña</label>
-                        <Password inputId="password" value={password} onChange={(event) => setPassword(event.target.value)} toggleMask className="w-full mb-2" inputClassName="w-full p-3" required />
-                        <div className="flex justify-content-end mb-4">
-                            <Button type="button" label="¿Olvidaste tu contraseña?" link className="p-0" onClick={() => router.push('/auth/forgot-password')} />
-                        </div>
-                        <Button type="submit" label="Iniciar sesión" className="w-full p-3 text-xl" loading={loading} disabled={loading || googleLoading || isLoading} />
-                    </form>
-                    <Button type="button" label="Continuar con Google" icon="pi pi-google" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleGoogleLogin} loading={googleLoading} disabled={loading || googleLoading || isLoading} />
-                    <Button type="button" label="Continuar con GitHub" icon="pi pi-github" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleGithubLogin} loading={githubLoading} disabled={loading || googleLoading || isLoading} />
-                    <Button type="button" label="Continuar con Discord" icon="pi pi-discord" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleDiscordLogin} disabled={loading || googleLoading || isLoading} />
-                    <Button type="button" label="¿No tienes cuenta? Regístrate" link className="w-full mt-3" onClick={() => router.push('/auth/register')} />
+        <AuthCard title="Iniciar sesión" subtitle="Ingresa con tu correo y contraseña">
+            {success && <Message severity="success" text={success} className="w-full mb-4" />}
+            {error && <Message severity="error" text={error} className="w-full mb-4" />}
+
+            <form onSubmit={handleSubmit}>
+                <label htmlFor="email" className="block text-900 font-medium mb-2">
+                    Correo electrónico
+                </label>
+                <span className="p-input-icon-left w-full mb-4">
+                    <i className="pi pi-envelope" aria-hidden="true" />
+                    <InputText id="email" type="email" autoComplete="email" placeholder="tucorreo@ejemplo.com" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full" required />
+                </span>
+
+                <div className="flex align-items-center justify-content-between mb-2">
+                    <label htmlFor="password" className="text-900 font-medium">
+                        Contraseña
+                    </label>
+                    <Link href="/auth/forgot-password" className="text-sm font-medium text-primary">
+                        ¿Olvidaste tu contraseña?
+                    </Link>
                 </div>
-            </div>
-        </div>
+                <Password inputId="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} toggleMask feedback={false} className="w-full mb-4" inputClassName="w-full" required />
+
+                <Button type="submit" label="Iniciar sesión" icon="pi pi-sign-in" className="w-full" loading={submitting} disabled={busy} />
+            </form>
+
+            <SocialLoginButtons loadingProvider={socialProvider} disabled={busy} onSelect={signInWith} />
+
+            <p className="text-center text-600 mt-5 mb-0">
+                ¿No tienes cuenta?{' '}
+                <Link href="/auth/register" className="font-medium text-primary">
+                    Regístrate
+                </Link>
+            </p>
+        </AuthCard>
     );
 };
 
 export default function LoginPage() {
     return (
-        <Suspense
-            fallback={
-                <div className="surface-ground flex align-items-center justify-content-center min-h-screen">
-                    <i
-                        className="pi pi-spin pi-spinner"
-                        style={{ fontSize: '2rem' }}
-                    />
-                </div>
-            }
-        >
+        <Suspense fallback={<AuthLoading />}>
             <LoginPageContent />
         </Suspense>
     );

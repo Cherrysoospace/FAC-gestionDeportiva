@@ -13,7 +13,7 @@ export default function SearchInput({
     value,
     onChange,
     ariaLabel,
-    placeholder = 'Buscar...',
+    placeholder = 'Buscar…',
     disabled = false,
     className = ''
 }: SearchInputProps) {

@@ -61,53 +61,55 @@ const AppConfig = (props: AppConfigProps) => {
 
     return (
         <>
-            <button className="layout-config-button config-link" type="button" onClick={onConfigButtonClick}>
+            <button className="layout-config-button config-link" type="button" onClick={onConfigButtonClick} aria-label="Personalizar apariencia" title="Personalizar apariencia">
                 <i className="pi pi-cog"></i>
             </button>
 
             <Sidebar visible={layoutState.configSidebarVisible} onHide={onConfigSidebarHide} position="right" className="layout-config-sidebar w-20rem">
                 {!props.simple && (
                     <>
-                        <h5>Scale</h5>
+                        <h5>Tamaño de la interfaz</h5>
                         <div className="flex align-items-center">
-                            <Button icon="pi pi-minus" type="button" onClick={decrementScale} rounded text className="w-2rem h-2rem mr-2" disabled={layoutConfig.scale === scales[0]}></Button>
+                            <Button icon="pi pi-minus" type="button" onClick={decrementScale} aria-label="Reducir tamaño" rounded text className="w-2rem h-2rem mr-2" disabled={layoutConfig.scale === scales[0]}></Button>
                             <div className="flex gap-2 align-items-center">
                                 {scales.map((item) => {
                                     return <i className={classNames('pi pi-circle-fill', { 'text-primary-500': item === layoutConfig.scale, 'text-300': item !== layoutConfig.scale })} key={item}></i>;
                                 })}
                             </div>
-                            <Button icon="pi pi-plus" type="button" onClick={incrementScale} rounded text className="w-2rem h-2rem ml-2" disabled={layoutConfig.scale === scales[scales.length - 1]}></Button>
+                            <Button icon="pi pi-plus" type="button" onClick={incrementScale} aria-label="Aumentar tamaño" rounded text className="w-2rem h-2rem ml-2" disabled={layoutConfig.scale === scales[scales.length - 1]}></Button>
                         </div>
 
-                        <h5>Menu Type</h5>
+                        <h5>Tipo de menú</h5>
                         <div className="flex">
                             <div className="field-radiobutton flex-1">
                                 <RadioButton name="menuMode" value={'static'} checked={layoutConfig.menuMode === 'static'} onChange={(e) => changeMenuMode(e)} inputId="mode1"></RadioButton>
-                                <label htmlFor="mode1">Static</label>
+                                <label htmlFor="mode1">Fijo</label>
                             </div>
                             <div className="field-radiobutton flex-1">
                                 <RadioButton name="menuMode" value={'overlay'} checked={layoutConfig.menuMode === 'overlay'} onChange={(e) => changeMenuMode(e)} inputId="mode2"></RadioButton>
-                                <label htmlFor="mode2">Overlay</label>
+                                <label htmlFor="mode2">Flotante</label>
                             </div>
                         </div>
 
-                        <h5>Input Style</h5>
+                        <h5>Estilo de los campos</h5>
                         <div className="flex">
                             <div className="field-radiobutton flex-1">
                                 <RadioButton name="inputStyle" value={'outlined'} checked={layoutConfig.inputStyle === 'outlined'} onChange={(e) => changeInputStyle(e)} inputId="outlined_input"></RadioButton>
-                                <label htmlFor="outlined_input">Outlined</label>
+                                <label htmlFor="outlined_input">Con borde</label>
                             </div>
                             <div className="field-radiobutton flex-1">
                                 <RadioButton name="inputStyle" value={'filled'} checked={layoutConfig.inputStyle === 'filled'} onChange={(e) => changeInputStyle(e)} inputId="filled_input"></RadioButton>
-                                <label htmlFor="filled_input">Filled</label>
+                                <label htmlFor="filled_input">Rellenos</label>
                             </div>
                         </div>
 
-                        <h5>Ripple Effect</h5>
-                        <InputSwitch checked={layoutConfig.ripple as boolean} onChange={(e) => changeRipple(e)}></InputSwitch>
+                        <h5>Efecto al pulsar</h5>
+                        <InputSwitch aria-label="Activar efecto al pulsar" checked={layoutConfig.ripple as boolean} onChange={(e) => changeRipple(e)}></InputSwitch>
                     </>
                 )}
-                <h5>PrimeOne Design</h5>
+                <h5>Temas de color</h5>
+                <p className="text-600 text-sm mt-0">El tema verde azulado (Lara Light Teal) es el predeterminado del sistema.</p>
+                <h6>PrimeOne</h6>
                 <div className="grid">
                     <div className="col-3">
                         <button className="p-link w-2rem h-2rem" onClick={() => _changeTheme('lara-light-indigo', 'light')}>
@@ -171,7 +173,7 @@ const AppConfig = (props: AppConfigProps) => {
                     </div>
                 </div>
 
-                <h5>Bootstrap</h5>
+                <h6>Bootstrap</h6>
                 <div className="grid">
                     <div className="col-3">
                         <button className="p-link w-2rem h-2rem" onClick={() => _changeTheme('bootstrap4-light-blue', 'light')}>
@@ -195,7 +197,7 @@ const AppConfig = (props: AppConfigProps) => {
                     </div>
                 </div>
 
-                <h5>Material Design</h5>
+                <h6>Material Design</h6>
                 <div className="grid">
                     <div className="col-3">
                         <button className="p-link w-2rem h-2rem" onClick={() => _changeTheme('md-light-indigo', 'light')}>
@@ -219,7 +221,7 @@ const AppConfig = (props: AppConfigProps) => {
                     </div>
                 </div>
 
-                <h5>Material Design Compact</h5>
+                <h6>Material Design compacto</h6>
                 <div className="grid">
                     <div className="col-3">
                         <button className="p-link w-2rem h-2rem" onClick={() => _changeTheme('mdc-light-indigo', 'light')}>

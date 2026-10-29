@@ -9,6 +9,7 @@ import {
     EndpointRequirement,
     PermissionRequirement
 } from '@/types/security';
+import LoadingState from '@/components/ui/LoadingState';
 import AccessDenied from './AccessDenied';
 
 interface ProtectedRouteProps {
@@ -45,14 +46,7 @@ export default function ProtectedRoute({
         isLoading ||
         (isAuthenticated && permissionsStatus === 'loading' && !user)
     ) {
-        return (
-            <div className="flex align-items-center justify-content-center min-h-screen">
-                <i
-                    className="pi pi-spin pi-spinner"
-                    style={{ fontSize: '2rem' }}
-                />
-            </div>
-        );
+        return <LoadingState message="Cargando tus permisos…" />;
     }
 
     if (!isAuthenticated) {

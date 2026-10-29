@@ -1,0 +1,89 @@
+.screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(100%, 30rem);
+}
+
+.brandBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.card {
+    width: 100%;
+    padding: 2.5rem 1.5rem;
+    border: 1px solid var(--surface-border);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 1.5rem;
+    background: var(--surface-card);
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.06);
+
+    @media (min-width: 576px) {
+        padding: 3rem 2.5rem;
+    }
+}
+
+.statusIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    font-size: 1.5rem;
+}
+
+.statusIcon-info {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+}
+
+.statusIcon-warning {
+    background: var(--orange-100);
+    color: var(--orange-700);
+}
+
+.statusIcon-danger {
+    background: var(--red-100);
+    color: var(--red-700);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0 1rem;
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+
+    &::before,
+    &::after {
+        content: '';
+        flex: 1;
+        border-top: 1px solid var(--surface-border);
+    }
+}
+
+.socialGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+
+    @media (min-width: 420px) {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

@@ -79,7 +79,7 @@ export default function RoleSelector({
             {loading && (
                 <small className="text-600 flex align-items-center gap-1">
                     <i className="pi pi-spin pi-spinner text-xs" />
-                    Cargando permisos del rol...
+                    Cargando permisos del rol…
                 </small>
             )}
         </div>

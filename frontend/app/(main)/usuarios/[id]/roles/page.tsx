@@ -188,9 +188,10 @@ function UserRolesContent({ userId }: { userId: number }) {
 
     const pageHeader = (
         <PageHeader
-            title="Asignar Roles a Usuario"
+            title="Asignar roles al usuario"
             subtitle="Asigna o retira los roles del usuario y revisa los permisos efectivos que obtiene con ellos."
             breadcrumb={[
+                { label: 'Inicio', href: '/' },
                 { label: 'Usuarios', href: '/usuarios' },
                 { label: user?.name ?? 'Usuario' },
                 { label: 'Roles' }

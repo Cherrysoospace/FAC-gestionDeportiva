@@ -1,37 +1,49 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useContext } from 'react';
 import { classNames } from 'primereact/utils';
 import { LayoutContext } from '@/layout/context/layoutcontext';
+import BrandLogo, { APP_NAME, APP_TAGLINE } from '@/components/ui/BrandLogo';
+import styles from './auth.module.scss';
+
+export type AuthCardTone = 'info' | 'warning' | 'danger';
 
 interface AuthCardProps {
     title: string;
     subtitle?: string;
-    children: React.ReactNode;
+    /** Icono destacado sobre el título (pantallas de estado como acceso denegado o error). */
+    icon?: string;
+    tone?: AuthCardTone;
+    children?: React.ReactNode;
 }
 
-// Marco común de las pantallas públicas de autenticación (logo + tarjeta centrada).
-export default function AuthCard({ title, subtitle, children }: AuthCardProps) {
+// Marco común de las pantallas públicas: identidad del sistema + tarjeta centrada.
+export default function AuthCard({ title, subtitle, icon, tone = 'info', children }: AuthCardProps) {
     const { layoutConfig } = useContext(LayoutContext);
 
-    const containerClassName = classNames(
-        'surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden',
-        { 'p-input-filled': layoutConfig.inputStyle === 'filled' }
-    );
-
     return (
-        <div className={containerClassName}>
-            <div className="flex flex-column align-items-center justify-content-center">
-                <img src={`/layout/images/logo-${layoutConfig.colorScheme === 'light' ? 'dark' : 'white'}.svg`} alt="Logo" className="mb-5 w-6rem flex-shrink-0" />
-                <div className="surface-card py-8 px-5 sm:px-8" style={{ borderRadius: '24px', width: 'min(90vw, 32rem)' }}>
+        <main className={classNames('auth-background', styles.screen, { 'p-input-filled': layoutConfig.inputStyle === 'filled' })}>
+            <div className={styles.wrapper}>
+                <div className={styles.brandBlock}>
+                    <BrandLogo size="lg" />
+                    <span className="text-900 text-2xl font-bold">{APP_NAME}</span>
+                    <span className="text-600">{APP_TAGLINE}</span>
+                </div>
+                <section className={styles.card} aria-labelledby="auth-card-title">
                     <div className="text-center mb-5">
-                        <div className="text-900 text-3xl font-medium mb-3">{title}</div>
-                        {subtitle && <span className="text-600 font-medium">{subtitle}</span>}
+                        {icon && (
+                            <span className={classNames(styles.statusIcon, styles[`statusIcon-${tone}`])} aria-hidden="true">
+                                <i className={`pi ${icon}`} />
+                            </span>
+                        )}
+                        <h1 id="auth-card-title" className="text-900 text-3xl font-semibold mt-0 mb-2">
+                            {title}
+                        </h1>
+                        {subtitle && <p className="text-600 m-0 line-height-3">{subtitle}</p>}
                     </div>
                     {children}
-                </div>
+                </section>
             </div>
-        </div>
+        </main>
     );
 }

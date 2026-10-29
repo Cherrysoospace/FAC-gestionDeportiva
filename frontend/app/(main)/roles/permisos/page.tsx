@@ -7,6 +7,8 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Message } from 'primereact/message';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
+import { classNames } from 'primereact/utils';
+import LoadingState from '@/components/ui/LoadingState';
 import PageHeader from '@/components/ui/PageHeader';
 import ProtectedRoute from '@/layout/ProtectedRoute';
 import {
@@ -17,6 +19,7 @@ import RoleSelector from './components/RoleSelector';
 import PermissionMatrix from './components/PermissionMatrix';
 import RoleSummaryPanel from './components/RoleSummaryPanel';
 import { useRolePermissions } from './hooks/useRolePermissions';
+import styles from './permissions.module.scss';
 
 export default function RolePermissionsPage() {
     return (
@@ -254,14 +257,8 @@ function RolePermissionsContent() {
 
     if (initialLoading) {
         return (
-            <div className="card flex flex-column align-items-center gap-3 py-8">
-                <i
-                    className="pi pi-spin pi-spinner"
-                    style={{ fontSize: '2rem' }}
-                />
-                <span className="text-600">
-                    Cargando roles y permisos...
-                </span>
+            <div className="card">
+                <LoadingState message="Cargando roles y permisos…" />
             </div>
         );
     }
@@ -304,8 +301,9 @@ function RolePermissionsContent() {
     return (
         <>
             <PageHeader
-                title="Asignar Permisos a Roles"
-                subtitle="Administra de manera centralizada los permisos que puede ejecutar cada rol del sistema."
+                title="Asignar permisos a roles"
+                subtitle="Elige un rol y marca las acciones que podrán realizar las personas que lo tengan."
+                breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Asignar permisos' }]}
                 actions={
                     <Button
                         label="Volver al inicio"
@@ -416,10 +414,9 @@ function RolePermissionsContent() {
             <div className="grid">
                 <div className="col-12 lg:col-8">
                     <div
-                        style={{
-                            opacity: roleLoading ? 0.6 : 1,
-                            transition: 'opacity 150ms ease-in-out'
-                        }}
+                        className={classNames(styles.matrixArea, {
+                            [styles.matrixAreaBusy]: roleLoading
+                        })}
                         aria-busy={roleLoading}
                     >
                         <PermissionMatrix

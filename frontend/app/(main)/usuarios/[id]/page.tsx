@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Avatar } from 'primereact/avatar';
 import { Button } from 'primereact/button';
 import { ConfirmDialog } from 'primereact/confirmdialog';
 import { Message } from 'primereact/message';
@@ -10,10 +9,9 @@ import { Skeleton } from 'primereact/skeleton';
 import { Toast } from 'primereact/toast';
 import PersonalDataForm from '@/components/profile/PersonalDataForm';
 import PageHeader from '@/components/ui/PageHeader';
+import ProfileAvatar from '@/components/ui/ProfileAvatar';
 import { useAuth } from '@/layout/context/authcontext';
 import ProtectedRoute from '@/layout/ProtectedRoute';
-import { resolveApiUrl } from '@/lib/api';
-import { getInitials } from '@/lib/format';
 import {
     USER_DEACTIVATE_ENDPOINT,
     USER_DETAIL_ENDPOINTS,
@@ -84,7 +82,7 @@ function UserDetailContent({ userId }: { userId: number }) {
             <PageHeader
                 title={user?.name ?? 'Detalle del usuario'}
                 subtitle="Información de la cuenta y perfil del usuario."
-                breadcrumb={[{ label: 'Usuarios', href: '/usuarios' }, { label: user?.name ?? 'Detalle' }]}
+                breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Usuarios', href: '/usuarios' }, { label: user?.name ?? 'Detalle' }]}
                 actions={actions}
             />
 
@@ -129,11 +127,7 @@ function UserDetailContent({ userId }: { userId: number }) {
 function AccountCard({ user, photoUrl }: { user: UserAccount; photoUrl: string | null }) {
     return (
         <div className="card flex flex-column align-items-center text-center h-full">
-            {photoUrl ? (
-                <Avatar image={resolveApiUrl(photoUrl)} shape="circle" className="mb-3" style={{ width: '7rem', height: '7rem' }} imageAlt={`Foto de ${user.name}`} />
-            ) : (
-                <Avatar label={getInitials(user.name)} shape="circle" className="mb-3 text-3xl bg-primary" style={{ width: '7rem', height: '7rem' }} />
-            )}
+            <ProfileAvatar name={user.name} photoUrl={photoUrl} className="mb-3" />
             <div className="text-900 text-xl font-medium">{user.name}</div>
             <div className="text-600 mb-3">{user.email}</div>
             <div className="flex gap-2 justify-content-center">
