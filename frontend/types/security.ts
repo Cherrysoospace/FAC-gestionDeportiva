@@ -83,3 +83,13 @@ export interface UserSummary {
     name: string;
     email: string;
 }
+
+export interface UserRoleAssignment {
+    id: number;
+    userId: number;
+    role: RoleSummary;
+}
+
+export interface UserWithRoles extends UserSummary {
+    roles: UserRoleAssignment[];
+}
