@@ -7,7 +7,10 @@ import { MenuProvider } from './context/menucontext';
 import Link from 'next/link';
 import { AppMenuItem } from '@/types';
 import { useAuth } from './context/authcontext';
-import { ROLE_PERMISSIONS_VIEW_ENDPOINTS } from '@/lib/security-constants';
+import {
+    ROLE_PERMISSIONS_VIEW_ENDPOINTS,
+    USERS_VIEW_ENDPOINTS
+} from '@/lib/security-constants';
 
 const AppMenu = () => {
     const { layoutConfig } = useContext(LayoutContext);
@@ -15,6 +18,9 @@ const AppMenu = () => {
 
     const canAccessRolePermissions = ROLE_PERMISSIONS_VIEW_ENDPOINTS.every(
         (endpoint) => hasPermissionUrl(endpoint.url, endpoint.method)
+    );
+    const canAccessUsers = USERS_VIEW_ENDPOINTS.every((endpoint) =>
+        hasPermissionUrl(endpoint.url, endpoint.method)
     );
 
     const model: AppMenuItem[] = [
@@ -24,8 +30,14 @@ const AppMenu = () => {
         },
         {
             label: 'Seguridad',
-            visible: canAccessRolePermissions,
+            visible: canAccessUsers || canAccessRolePermissions,
             items: [
+                {
+                    label: 'Usuarios',
+                    icon: 'pi pi-fw pi-users',
+                    to: '/usuarios',
+                    visible: canAccessUsers
+                },
                 {
                     label: 'Asignar permisos',
                     icon: 'pi pi-fw pi-lock',

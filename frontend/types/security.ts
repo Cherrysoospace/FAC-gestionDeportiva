@@ -77,3 +77,9 @@ export interface EndpointRequirement {
     url: string;
     method: string;
 }
+
+export interface UserSummary {
+    id: number;
+    name: string;
+    email: string;
+}
