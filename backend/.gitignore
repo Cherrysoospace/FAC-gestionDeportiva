@@ -40,3 +40,6 @@ target_test-classes/
 
 ### Fotos de perfil subidas en local ###
 uploads/
+
+### Secretos locales (credenciales de correo) ###
+.env
