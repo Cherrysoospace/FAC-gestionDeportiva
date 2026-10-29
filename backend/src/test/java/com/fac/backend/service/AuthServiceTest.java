@@ -107,6 +107,32 @@ class AuthServiceTest {
     }
 
     @Test
+    void loginTellsOauthUserWhichProviderToUse() {
+        User user = user(true);
+        user.setPassword(null);
+        user.setAuthProvider("github.com");
+
+        LoginRequestDTO dto = new LoginRequestDTO();
+        dto.setEmail(user.getEmail());
+        dto.setPassword("secret");
+
+        when(userRepository.findByEmailIgnoreCase(user.getEmail()))
+                .thenReturn(Optional.of(user));
+
+        ApplicationException exception = assertThrows(
+                ApplicationException.class,
+                () -> authService.login(dto)
+        );
+
+        assertEquals(ErrorCase.UNAUTHORIZED, exception.getErrorCase());
+        assertEquals(
+                "Esta cuenta usa GitHub. Inicia sesión con GitHub.",
+                exception.getMessage()
+        );
+        verifyNoInteractions(sessionService);
+    }
+
+    @Test
     void loginRejectsDisabledUser() {
         User user = user(false);
         user.setPassword("encoded-password");

@@ -55,8 +55,8 @@ class UserServiceResolverTest {
                 "google.com",
                 "uid-1"
         )).thenReturn(Optional.empty());
-        when(userRepository.existsByEmail("new@example.com"))
-                .thenReturn(false);
+        when(userRepository.findByEmailIgnoreCase("new@example.com"))
+                .thenReturn(Optional.empty());
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> {
                     User user = invocation.getArgument(0);
@@ -98,8 +98,8 @@ class UserServiceResolverTest {
                 "google.com",
                 "uid-2"
         )).thenReturn(Optional.empty());
-        when(userRepository.existsByEmail("named@example.com"))
-                .thenReturn(false);
+        when(userRepository.findByEmailIgnoreCase("named@example.com"))
+                .thenReturn(Optional.empty());
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -146,8 +146,10 @@ class UserServiceResolverTest {
                 "google.com",
                 "uid-4"
         )).thenReturn(Optional.empty());
-        when(userRepository.existsByEmail("taken@example.com"))
-                .thenReturn(true);
+        User existing = user("taken@example.com", true);
+        existing.setAuthProvider("github.com");
+        when(userRepository.findByEmailIgnoreCase("taken@example.com"))
+                .thenReturn(Optional.of(existing));
 
         ApplicationException exception = assertThrows(
                 ApplicationException.class,
@@ -161,7 +163,41 @@ class UserServiceResolverTest {
         );
 
         assertEquals(ErrorCase.ALREADY_EXISTS, exception.getErrorCase());
+        assertEquals(
+                "Ese correo ya está registrado con GitHub. "
+                        + "Inicia sesión con GitHub.",
+                exception.getMessage()
+        );
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void tellsLocalUserToUsePassword() {
+        when(userRepository.findByAuthProviderAndExternalId(
+                "github.com",
+                "uid-6"
+        )).thenReturn(Optional.empty());
+        User existing = user("local@example.com", true);
+        existing.setAuthProvider(User.LOCAL_AUTH_PROVIDER);
+        when(userRepository.findByEmailIgnoreCase("local@example.com"))
+                .thenReturn(Optional.of(existing));
+
+        ApplicationException exception = assertThrows(
+                ApplicationException.class,
+                () -> userService.resolverUsuario(
+                        "github.com",
+                        "uid-6",
+                        "local@example.com",
+                        "Local",
+                        null
+                )
+        );
+
+        assertEquals(
+                "Ese correo ya está registrado con correo y contraseña. "
+                        + "Inicia sesión con correo y contraseña.",
+                exception.getMessage()
+        );
     }
 
     @Test

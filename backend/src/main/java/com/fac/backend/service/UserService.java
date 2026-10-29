@@ -15,6 +15,7 @@ import com.fac.backend.mapper.UserMapper;
 import com.fac.backend.repository.RoleRepository;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.repository.UserRoleRepository;
+import com.fac.backend.security.AuthProviders;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -60,10 +61,15 @@ public class UserService {
             return user;
         }
 
-        if (userRepository.existsByEmail(correo)) {
+        Optional<User> userWithEmail =
+                userRepository.findByEmailIgnoreCase(correo);
+
+        if (userWithEmail.isPresent()) {
             throw new ApplicationException(
                     ErrorCase.ALREADY_EXISTS,
-                    "Ese correo ya está registrado con otro método de acceso"
+                    alreadyRegisteredMessage(
+                            userWithEmail.get().getAuthProvider()
+                    )
             );
         }
 
@@ -81,6 +87,17 @@ public class UserService {
         assignDefaultRole(savedUser);
 
         return savedUser;
+    }
+
+    private String alreadyRegisteredMessage(String authProvider) {
+        String method = AuthProviders.label(authProvider);
+
+        if (method == null) {
+            return "Ese correo ya está registrado con otro método de acceso";
+        }
+
+        return "Ese correo ya está registrado con " + method
+                + ". Inicia sesión con " + method + ".";
     }
 
     private String resolveName(String nombre, String correo) {

@@ -19,6 +19,7 @@ const LoginPageContent = () => {
     const {
         loginWithCredentials,
         loginWithGoogle,
+        loginWithGithub,
         isAuthenticated,
         isLoading
     } = useAuth();
@@ -34,6 +35,7 @@ const LoginPageContent = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+    const [githubLoading, setGithubLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -61,11 +63,26 @@ const LoginPageContent = () => {
                 setError('No se pudo conectar con el servidor');
             } else if (cause instanceof ApiRequestError && cause.status === 403) {
                 setError('Tu usuario está deshabilitado');
+            } else if (cause instanceof ApiRequestError && cause.status === 401) {
+                // El backend indica si la cuenta usa Google, GitHub o Discord
+                setError(cause.message);
             } else {
                 setError('Credenciales incorrectas');
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGithubLogin = async () => {
+        setError('');
+        setGithubLoading(true);
+        try {
+            await loginWithGithub(nextPath);
+        } catch (cause) {
+            setError(cause instanceof ApiRequestError ? cause.message : 'No se pudo iniciar sesión con GitHub');
+        } finally {
+            setGithubLoading(false);
         }
     };
 
@@ -128,6 +145,7 @@ const LoginPageContent = () => {
                         <Button type="submit" label="Iniciar sesión" className="w-full p-3 text-xl" loading={loading} disabled={loading || googleLoading || isLoading} />
                     </form>
                     <Button type="button" label="Continuar con Google" icon="pi pi-google" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleGoogleLogin} loading={googleLoading} disabled={loading || googleLoading || isLoading} />
+                    <Button type="button" label="Continuar con GitHub" icon="pi pi-github" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleGithubLogin} loading={githubLoading} disabled={loading || googleLoading || isLoading} />
                     <Button type="button" label="Continuar con Discord" icon="pi pi-discord" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={handleDiscordLogin} disabled={loading || googleLoading || isLoading} />
                     <Button type="button" label="¿No tienes cuenta? Regístrate" link className="w-full mt-3" onClick={() => router.push('/auth/register')} />
                 </div>

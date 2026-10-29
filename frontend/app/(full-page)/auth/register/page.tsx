@@ -15,7 +15,7 @@ import { ApiRequestError } from '../../../../lib/api';
 export default function RegisterPage() {
     const router = useRouter();
     const { layoutConfig } = useContext(LayoutContext);
-    const { register, loginWithGoogle, isAuthenticated, isLoading } = useAuth();
+    const { register, loginWithGoogle, loginWithGithub, isAuthenticated, isLoading } = useAuth();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -23,6 +23,21 @@ export default function RegisterPage() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+    const [githubLoading, setGithubLoading] = useState(false);
+    const busy = loading || googleLoading || githubLoading || isLoading;
+
+    // El login social crea la cuenta si no existe, así que también sirve para registrarse
+    const handleSocialLogin = async (login: () => Promise<void>, setProviderLoading: (value: boolean) => void, providerName: string) => {
+        setError(null);
+        setProviderLoading(true);
+        try {
+            await login();
+        } catch (cause) {
+            setError(cause instanceof ApiRequestError ? cause.message : `No se pudo continuar con ${providerName}`);
+        } finally {
+            setProviderLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) router.replace('/');
@@ -78,9 +93,10 @@ export default function RegisterPage() {
                         <Password inputId="password" value={password} onChange={(event) => setPassword(event.target.value)} toggleMask className="w-full mb-3" inputClassName="w-full p-3" required />
                         <label htmlFor="confirmation" className="block text-900 font-medium mb-2">Confirmar contraseña</label>
                         <Password inputId="confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} toggleMask className="w-full mb-4" inputClassName="w-full p-3" required />
-                        <Button type="submit" label="Crear cuenta" className="w-full p-3 text-xl" loading={loading} disabled={loading || googleLoading || isLoading} />
+                        <Button type="submit" label="Crear cuenta" className="w-full p-3 text-xl" loading={loading} disabled={busy} />
                     </form>
-                    <Button type="button" label="Continuar con Google" icon="pi pi-google" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={() => void loginWithGoogle()} loading={googleLoading} disabled={loading || googleLoading || isLoading} />
+                    <Button type="button" label="Continuar con Google" icon="pi pi-google" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={() => void handleSocialLogin(() => loginWithGoogle(), setGoogleLoading, 'Google')} loading={googleLoading} disabled={busy} />
+                    <Button type="button" label="Continuar con GitHub" icon="pi pi-github" className="w-full p-3 text-xl p-button-outlined mt-3" onClick={() => void handleSocialLogin(() => loginWithGithub(), setGithubLoading, 'GitHub')} loading={githubLoading} disabled={busy} />
                     <Button type="button" label="¿Ya tienes cuenta? Inicia sesión" link className="w-full mt-3" onClick={() => router.push('/auth/login')} />
                 </div>
             </div>

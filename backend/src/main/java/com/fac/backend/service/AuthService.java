@@ -11,6 +11,7 @@ import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.mapper.RoleMapper;
 import com.fac.backend.repository.UserRepository;
+import com.fac.backend.security.AuthProviders;
 import com.fac.backend.security.DiscordOAuthClient;
 import com.fac.backend.security.FirebaseIdentity;
 import com.fac.backend.security.FirebaseTokenVerifier;
@@ -40,12 +41,11 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCase(normalizeEmail(dto.getEmail()))
                 .orElseThrow(this::unauthorized);
 
-        if (user.getPassword() == null
-                || user.getPassword().isBlank()
-                || !passwordEncoder.matches(
-                        dto.getPassword(),
-                        user.getPassword()
-                )) {
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw passwordlessAccount(user);
+        }
+
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw unauthorized();
         }
 
@@ -162,6 +162,22 @@ public class AuthService {
                     "Tu usuario está deshabilitado"
             );
         }
+    }
+
+    // Cuentas creadas con un proveedor externo: se indica con cuál entrar
+    private ApplicationException passwordlessAccount(User user) {
+        String method = AuthProviders.label(user.getAuthProvider());
+
+        if (method == null
+                || User.LOCAL_AUTH_PROVIDER.equals(user.getAuthProvider())) {
+            return unauthorized();
+        }
+
+        return new ApplicationException(
+                ErrorCase.UNAUTHORIZED,
+                "Esta cuenta usa " + method + ". Inicia sesión con "
+                        + method + "."
+        );
     }
 
     private ApplicationException unauthorized() {

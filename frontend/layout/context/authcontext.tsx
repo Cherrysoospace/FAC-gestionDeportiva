@@ -2,6 +2,8 @@
 
 import {
     Auth,
+    AuthProvider as FirebaseAuthProvider,
+    GithubAuthProvider,
     GoogleAuthProvider,
     signInWithPopup,
     signOut
@@ -68,6 +70,7 @@ interface AuthContextValue {
     ) => Promise<void>;
     register: (name: string, email: string, password: string) => Promise<void>;
     loginWithGoogle: (redirectTo?: string) => Promise<void>;
+    loginWithGithub: (redirectTo?: string) => Promise<void>;
     loginWithDiscord: (
         code: string,
         redirectUri: string,
@@ -174,16 +177,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             window.removeEventListener('fac:forbidden', handleForbidden);
     }, [loadCurrentUser]);
 
-    const loginWithGoogle = useCallback(
-        async (redirectTo = '/') => {
+    // Pasos comunes a todos los métodos de login una vez que el backend
+    // respondió: validar la respuesta, guardar la sesión y redirigir.
+    const startSession = useCallback(
+        async (data: AuthResponseDTO, redirectTo: string) => {
+            const accessToken = data.accessToken ?? data.token;
+
+            if (!accessToken || !data.expiresAt) {
+                throw new ApiRequestError(
+                    500,
+                    'INVALID_RESPONSE',
+                    'El servidor no devolvió una sesión válida'
+                );
+            }
+
+            saveSession({ token: accessToken, expiresAt: data.expiresAt });
+            setToken(accessToken);
+            setExpiresAt(data.expiresAt);
+
+            await loadCurrentUser();
+
+            if (getStoredSession()) {
+                router.push(redirectTo);
+            }
+        },
+        [loadCurrentUser, router]
+    );
+
+    const loginWithFirebaseProvider = useCallback(
+        async (provider: FirebaseAuthProvider, redirectTo = '/') => {
             if (!auth) {
                 throw new ApiRequestError(
                     0,
                     'FIREBASE_NOT_CONFIGURED',
-                    'El login con Google no está configurado'
+                    'El login social no está configurado'
                 );
             }
-            const provider = new GoogleAuthProvider();
 
             try {
                 const result = await signInWithPopup(auth, provider);
@@ -198,33 +227,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     }
                 );
 
-                const accessToken = data.accessToken ?? data.token;
-
-                if (!accessToken || !data.expiresAt) {
-                    throw new ApiRequestError(
-                        500,
-                        'INVALID_RESPONSE',
-                        'El servidor no devolvió una sesión válida'
-                    );
-                }
-
-                saveSession({
-                    token: accessToken,
-                    expiresAt: data.expiresAt
-                });
-                setToken(accessToken);
-                setExpiresAt(data.expiresAt);
-
-                await loadCurrentUser();
-
-                if (getStoredSession()) {
-                    router.push(redirectTo);
-                }
+                await startSession(data, redirectTo);
             } finally {
                 await signOut(auth as Auth).catch(() => undefined);
             }
         },
-        [loadCurrentUser, router]
+        [startSession]
+    );
+
+    const loginWithGoogle = useCallback(
+        (redirectTo = '/') =>
+            loginWithFirebaseProvider(new GoogleAuthProvider(), redirectTo),
+        [loginWithFirebaseProvider]
+    );
+
+    const loginWithGithub = useCallback(
+        (redirectTo = '/') => {
+            const provider = new GithubAuthProvider();
+            // Sin este scope GitHub no entrega el correo si el usuario lo tiene privado
+            provider.addScope('user:email');
+            return loginWithFirebaseProvider(provider, redirectTo);
+        },
+        [loginWithFirebaseProvider]
     );
 
     const loginWithDiscord = useCallback(
@@ -237,27 +261,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     publicRequest: true
                 }
             );
-            const accessToken = data.accessToken ?? data.token;
 
-            if (!accessToken || !data.expiresAt) {
-                throw new ApiRequestError(
-                    500,
-                    'INVALID_RESPONSE',
-                    'El servidor no devolvió una sesión válida'
-                );
-            }
-
-            saveSession({ token: accessToken, expiresAt: data.expiresAt });
-            setToken(accessToken);
-            setExpiresAt(data.expiresAt);
-
-            await loadCurrentUser();
-
-            if (getStoredSession()) {
-                router.push(redirectTo);
-            }
+            await startSession(data, redirectTo);
         },
-        [loadCurrentUser, router]
+        [startSession]
     );
 
     const loginWithCredentials = useCallback(
@@ -267,27 +274,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 body: JSON.stringify({ email, password }),
                 publicRequest: true
             });
-            const accessToken = data.accessToken ?? data.token;
 
-            if (!accessToken || !data.expiresAt) {
-                throw new ApiRequestError(
-                    500,
-                    'INVALID_RESPONSE',
-                    'El servidor no devolvió una sesión válida'
-                );
-            }
-
-            saveSession({ token: accessToken, expiresAt: data.expiresAt });
-            setToken(accessToken);
-            setExpiresAt(data.expiresAt);
-
-            await loadCurrentUser();
-
-            if (getStoredSession()) {
-                router.push(redirectTo);
-            }
+            await startSession(data, redirectTo);
         },
-        [loadCurrentUser, router]
+        [startSession]
     );
 
     const register = useCallback(
@@ -371,6 +361,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             register,
             loginWithGoogle,
             loginWithDiscord,
+            loginWithGithub,
             logout
         };
     }, [
@@ -387,6 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         loginWithGoogle,
         loginWithDiscord,
+        loginWithGithub,
         logout
     ]);
 
