@@ -7,6 +7,7 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Message } from 'primereact/message';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
+import PageHeader from '@/components/ui/PageHeader';
 import ProtectedRoute from '@/layout/ProtectedRoute';
 import {
     ROLE_PERMISSIONS_VIEW_ENDPOINTS,
@@ -302,23 +303,18 @@ function RolePermissionsContent() {
 
     return (
         <>
-            <div className="card mb-4">
-                <div className="flex flex-column md:flex-row md:align-items-start md:justify-content-between gap-3">
-                    <div className="flex flex-column gap-1">
-                        <h2 className="m-0">Asignar Permisos a Roles</h2>
-                        <p className="text-600 m-0">
-                            Administra de manera centralizada los permisos que
-                            puede ejecutar cada rol del sistema.
-                        </p>
-                    </div>
+            <PageHeader
+                title="Asignar Permisos a Roles"
+                subtitle="Administra de manera centralizada los permisos que puede ejecutar cada rol del sistema."
+                actions={
                     <Button
                         label="Volver al inicio"
                         icon="pi pi-arrow-left"
                         text
                         onClick={handleBack}
                     />
-                </div>
-            </div>
+                }
+            />
 
             {loadError && (
                 <div className="flex flex-column sm:flex-row sm:align-items-center gap-3 mb-4">

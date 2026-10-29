@@ -4,6 +4,7 @@ import { Button } from 'primereact/button';
 import { Message } from 'primereact/message';
 import { ProgressBar } from 'primereact/progressbar';
 import { Tag } from 'primereact/tag';
+import StatCard from '@/components/ui/StatCard';
 import { RoleAccessSummary, RoleSummary } from '@/types/security';
 import styles from '../permissions.module.scss';
 
@@ -88,40 +89,19 @@ export default function RoleSummaryPanel({
 
             <div className="grid grid-nogutter mb-3">
                 <div className="col-6 p-1">
-                    <div className={styles.statBox}>
-                        <span className="text-600 text-sm">
-                            Total disponibles
-                        </span>
-                        <span className="text-2xl font-bold text-900">
-                            {totalAvailable}
-                        </span>
-                    </div>
+                    <StatCard label="Total disponibles" value={totalAvailable} />
                 </div>
                 <div className="col-6 p-1">
-                    <div className={styles.statBox}>
-                        <span className="text-600 text-sm">Asignados</span>
-                        <span className="text-2xl font-bold text-900">
-                            {assignedCount}
-                        </span>
-                    </div>
+                    <StatCard label="Asignados" value={assignedCount} />
                 </div>
                 <div className="col-6 p-1">
-                    <div className={styles.statBox}>
-                        <span className="text-600 text-sm">No asignados</span>
-                        <span className="text-2xl font-bold text-900">
-                            {notAssigned}
-                        </span>
-                    </div>
+                    <StatCard label="No asignados" value={notAssigned} />
                 </div>
                 <div className="col-6 p-1">
-                    <div className={styles.statBox}>
-                        <span className="text-600 text-sm">
-                            Usuarios asociados
-                        </span>
-                        <span className="text-2xl font-bold text-900">
-                            {summary?.usersCount ?? 0}
-                        </span>
-                    </div>
+                    <StatCard
+                        label="Usuarios asociados"
+                        value={summary?.usersCount ?? 0}
+                    />
                 </div>
             </div>
 

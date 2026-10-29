@@ -60,16 +60,6 @@
     white-space: nowrap;
 }
 
-.statBox {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 0.75rem;
-    border: 1px solid var(--surface-border);
-    border-radius: 0.5rem;
-    background: var(--surface-ground);
-}
-
 .legendAssigned,
 .legendUnassigned {
     width: 0.625rem;
