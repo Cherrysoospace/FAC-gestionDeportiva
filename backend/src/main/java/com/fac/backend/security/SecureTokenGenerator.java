@@ -37,4 +37,12 @@ public class SecureTokenGenerator {
             throw new IllegalStateException("SHA-256 no está disponible", exception);
         }
     }
+
+    /** Compara en tiempo constante para no filtrar información por la latencia. */
+    public boolean matches(String rawToken, String expectedHash) {
+        return MessageDigest.isEqual(
+                hash(rawToken).getBytes(StandardCharsets.UTF_8),
+                expectedHash.getBytes(StandardCharsets.UTF_8)
+        );
+    }
 }

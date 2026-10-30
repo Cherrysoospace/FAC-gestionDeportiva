@@ -68,6 +68,13 @@ public class User {
     )
     private boolean enabled = true;
 
+    @Column(
+            name = "two_factor_enabled",
+            nullable = false,
+            columnDefinition = "TINYINT(1) NOT NULL DEFAULT 0"
+    )
+    private boolean twoFactorEnabled = false;
+
     @OneToOne(
             mappedBy = "user",
             cascade = CascadeType.ALL,
@@ -91,4 +98,16 @@ public class User {
             fetch = FetchType.LAZY
     )
     private List<UserRole> userRoles = new ArrayList<>();
+
+    /** Cuenta propia con contraseña: las cuentas OAuth no la tienen. */
+    public boolean hasLocalCredentials() {
+        return LOCAL_AUTH_PROVIDER.equals(authProvider)
+                && password != null
+                && !password.isBlank();
+    }
+
+    /** HU-SE-10: el 2FA interno solo aplica a cuentas con correo y contraseña. */
+    public boolean requiresTwoFactor() {
+        return twoFactorEnabled && hasLocalCredentials();
+    }
 }

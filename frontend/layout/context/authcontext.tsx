@@ -27,6 +27,7 @@ import {
 } from '@/lib/access';
 import { auth } from '@/lib/firebase';
 import { fetchCurrentUser } from '@/lib/security-api';
+import { verifyTwoFactorCode } from '@/lib/two-factor-api';
 import {
     clearSession,
     getStoredSession,
@@ -38,12 +39,23 @@ import {
     PermissionOperation,
     RoleSummary
 } from '@/types/security';
+import { TwoFactorChallenge } from '@/types/two-factor';
 
 interface AuthResponseDTO {
     accessToken?: string;
     token?: string;
     expiresAt: string;
 }
+
+interface LoginResponseDTO extends Partial<AuthResponseDTO> {
+    twoFactorRequired?: boolean;
+    twoFactor?: TwoFactorChallenge;
+}
+
+// Con 2FA activo el login no entrega token: queda pendiente el código (HU-SE-10)
+export type LoginOutcome =
+    | { status: 'authenticated' }
+    | { status: 'two-factor-required'; challenge: TwoFactorChallenge };
 
 export type PermissionsStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -66,6 +78,11 @@ interface AuthContextValue {
     loginWithCredentials: (
         email: string,
         password: string,
+        redirectTo?: string
+    ) => Promise<LoginOutcome>;
+    completeTwoFactorLogin: (
+        challengeId: string,
+        code: string,
         redirectTo?: string
     ) => Promise<void>;
     register: (name: string, email: string, password: string) => Promise<void>;
@@ -268,13 +285,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const loginWithCredentials = useCallback(
-        async (email: string, password: string, redirectTo = '/') => {
-            const data = await apiFetch<AuthResponseDTO>('/api/auth/login', {
+        async (
+            email: string,
+            password: string,
+            redirectTo = '/'
+        ): Promise<LoginOutcome> => {
+            const data = await apiFetch<LoginResponseDTO>('/api/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ email, password }),
                 publicRequest: true
             });
 
+            if (data.twoFactorRequired && data.twoFactor) {
+                return { status: 'two-factor-required', challenge: data.twoFactor };
+            }
+
+            await startSession(data as AuthResponseDTO, redirectTo);
+            return { status: 'authenticated' };
+        },
+        [startSession]
+    );
+
+    const completeTwoFactorLogin = useCallback(
+        async (challengeId: string, code: string, redirectTo = '/') => {
+            const data = await verifyTwoFactorCode(challengeId, code);
             await startSession(data, redirectTo);
         },
         [startSession]
@@ -358,6 +392,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             hasRole,
             refreshPermissions,
             loginWithCredentials,
+            completeTwoFactorLogin,
             register,
             loginWithGoogle,
             loginWithDiscord,
@@ -375,6 +410,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hasRole,
         refreshPermissions,
         loginWithCredentials,
+        completeTwoFactorLogin,
         register,
         loginWithGoogle,
         loginWithDiscord,

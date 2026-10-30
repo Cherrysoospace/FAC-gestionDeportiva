@@ -65,7 +65,7 @@ public class PasswordRecoveryService {
     }
 
     private void startRecovery(User user) {
-        if (!hasLocalCredentials(user)) {
+        if (!user.hasLocalCredentials()) {
             notifier.sendExternalProviderNotice(user);
             return;
         }
@@ -92,14 +92,8 @@ public class PasswordRecoveryService {
         return tokenRepository.findByTokenHash(tokenGenerator.hash(rawToken))
                 .filter(token -> token.isUsable(now))
                 .filter(token -> token.getUser().isEnabled())
-                .filter(token -> hasLocalCredentials(token.getUser()))
+                .filter(token -> token.getUser().hasLocalCredentials())
                 .orElseThrow(this::invalidToken);
-    }
-
-    private boolean hasLocalCredentials(User user) {
-        return User.LOCAL_AUTH_PROVIDER.equals(user.getAuthProvider())
-                && user.getPassword() != null
-                && !user.getPassword().isBlank();
     }
 
     private String normalize(String email) {

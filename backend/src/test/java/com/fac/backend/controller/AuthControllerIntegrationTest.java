@@ -1,6 +1,8 @@
 package com.fac.backend.controller;
 
 import com.fac.backend.dto.AuthResponseDTO;
+import com.fac.backend.dto.LoginResponseDTO;
+import com.fac.backend.dto.twofactor.TwoFactorChallengeDTO;
 import com.fac.backend.entity.User;
 import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
@@ -147,7 +149,8 @@ class AuthControllerIntegrationTest {
 
     @Test
     void localLoginEndpointStillWorks() throws Exception {
-        when(authService.login(any())).thenReturn(response());
+        when(authService.login(any()))
+                .thenReturn(LoginResponseDTO.authenticated(response()));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -158,7 +161,53 @@ class AuthControllerIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("jwt-token"))
+                .andExpect(jsonPath("$.twoFactorRequired").value(false));
+    }
+
+    @Test
+    void loginWithTwoFactorReturnsChallengeWithoutToken() throws Exception {
+        when(authService.login(any())).thenReturn(
+                LoginResponseDTO.twoFactorRequired(new TwoFactorChallengeDTO(
+                        "challenge-1",
+                        Instant.now().plusSeconds(300),
+                        Instant.now().plusSeconds(30),
+                        "ad***@uc.edu.co"
+                ))
+        );
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "admin@uc.edu.co",
+                                  "password": "Admin123!"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.twoFactorRequired").value(true))
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.twoFactor.challengeId").value("challenge-1"));
+    }
+
+    @Test
+    void twoFactorVerifyEndpointIsPublic() throws Exception {
+        when(authService.completeTwoFactorLogin("challenge-1", "123456"))
+                .thenReturn(response());
+
+        mockMvc.perform(post("/api/auth/2fa/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"challengeId\":\"challenge-1\",\"code\":\"123456\"}"))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-token"));
+    }
+
+    @Test
+    void twoFactorVerifyRejectsNonNumericCode() throws Exception {
+        mockMvc.perform(post("/api/auth/2fa/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"challengeId\":\"challenge-1\",\"code\":\"abc\"}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

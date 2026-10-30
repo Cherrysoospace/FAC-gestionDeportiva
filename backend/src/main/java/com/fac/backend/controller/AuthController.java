@@ -3,6 +3,7 @@ package com.fac.backend.controller;
 import com.fac.backend.dto.AuthResponseDTO;
 import com.fac.backend.dto.DiscordOAuthRequestDTO;
 import com.fac.backend.dto.LoginRequestDTO;
+import com.fac.backend.dto.LoginResponseDTO;
 import com.fac.backend.dto.MeResponseDTO;
 import com.fac.backend.dto.OAuthRequestDTO;
 import com.fac.backend.dto.RegisterRequestDTO;
@@ -28,7 +29,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public AuthResponseDTO login(@Valid @RequestBody LoginRequestDTO dto) {
+    public LoginResponseDTO login(@Valid @RequestBody LoginRequestDTO dto) {
         return authService.login(dto);
     }
 

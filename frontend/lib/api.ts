@@ -11,7 +11,10 @@ const PUBLIC_PATHS = new Set([
     '/api/auth/oauth/discord',
     '/api/auth/password/forgot',
     '/api/auth/password/reset',
-    '/api/auth/password/reset/validate'
+    '/api/auth/password/reset/validate',
+    '/api/auth/2fa/verify',
+    '/api/auth/2fa/resend',
+    '/api/auth/2fa/cancel'
 ]);
 
 export class ApiRequestError extends Error {

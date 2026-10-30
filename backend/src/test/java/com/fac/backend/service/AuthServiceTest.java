@@ -2,6 +2,8 @@ package com.fac.backend.service;
 
 import com.fac.backend.dto.AuthResponseDTO;
 import com.fac.backend.dto.LoginRequestDTO;
+import com.fac.backend.dto.LoginResponseDTO;
+import com.fac.backend.dto.twofactor.TwoFactorChallengeDTO;
 import com.fac.backend.entity.User;
 import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
@@ -19,8 +21,12 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -46,6 +52,9 @@ class AuthServiceTest {
 
     @Mock
     private FirebaseTokenVerifier firebaseTokenVerifier;
+
+    @Mock
+    private TwoFactorService twoFactorService;
 
     @InjectMocks
     private AuthService authService;
@@ -74,14 +83,93 @@ class AuthServiceTest {
                 new JwtService.IssuedToken(response, "jti-1", expiresAt)
         );
 
-        AuthResponseDTO result = authService.login(dto);
+        LoginResponseDTO result = authService.login(dto);
 
-        assertSame(response, result);
+        assertFalse(result.twoFactorRequired());
+        assertEquals("jwt-token", result.accessToken());
+        assertEquals(expiresAt, result.expiresAt());
+        assertNull(result.twoFactor());
         verify(sessionService).registerAuthenticatedSession(
                 user,
                 "jti-1",
                 expiresAt
         );
+        verifyNoInteractions(twoFactorService);
+    }
+
+    @Test
+    void loginWithTwoFactorReturnsChallengeWithoutSession() {
+        User user = user(true);
+        user.setPassword("encoded-password");
+        user.setTwoFactorEnabled(true);
+
+        LoginRequestDTO dto = new LoginRequestDTO();
+        dto.setEmail(user.getEmail());
+        dto.setPassword("secret");
+
+        when(userRepository.findByEmailIgnoreCase(user.getEmail()))
+                .thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret", "encoded-password"))
+                .thenReturn(true);
+
+        TwoFactorChallengeDTO challenge = new TwoFactorChallengeDTO(
+                "challenge-1",
+                Instant.now().plusSeconds(300),
+                Instant.now().plusSeconds(30),
+                "us***@example.com"
+        );
+        when(twoFactorService.startChallenge(user)).thenReturn(challenge);
+
+        LoginResponseDTO result = authService.login(dto);
+
+        assertTrue(result.twoFactorRequired());
+        assertNull(result.accessToken());
+        assertSame(challenge, result.twoFactor());
+        verifyNoInteractions(jwtService, sessionService);
+    }
+
+    @Test
+    void completeTwoFactorLoginIssuesSessionAfterValidCode() {
+        User user = user(true);
+
+        when(twoFactorService.verify("challenge-1", "123456"))
+                .thenReturn(user);
+
+        Instant expiresAt = Instant.now().plusSeconds(900);
+        AuthResponseDTO response = new AuthResponseDTO(
+                "jwt-token",
+                "Bearer",
+                expiresAt
+        );
+        when(jwtService.generateToken(user)).thenReturn(
+                new JwtService.IssuedToken(response, "jti-3", expiresAt)
+        );
+
+        AuthResponseDTO result =
+                authService.completeTwoFactorLogin("challenge-1", "123456");
+
+        assertSame(response, result);
+        verify(sessionService).registerAuthenticatedSession(
+                user,
+                "jti-3",
+                expiresAt
+        );
+    }
+
+    @Test
+    void completeTwoFactorLoginWithInvalidCodeDoesNotIssueSession() {
+        when(twoFactorService.verify("challenge-1", "000000"))
+                .thenThrow(new ApplicationException(
+                        ErrorCase.INVALID_OPERATION,
+                        "El código de verificación es incorrecto o ya expiró"
+                ));
+
+        assertThrows(
+                ApplicationException.class,
+                () -> authService.completeTwoFactorLogin("challenge-1", "000000")
+        );
+
+        verifyNoInteractions(jwtService, sessionService);
     }
 
     @Test
@@ -188,6 +276,7 @@ class AuthServiceTest {
         AuthResponseDTO result = authService.loginWithFirebase("id-token");
 
         assertSame(response, result);
+        verify(twoFactorService, never()).startChallenge(any());
         verify(sessionService).registerAuthenticatedSession(
                 user,
                 "jti-2",

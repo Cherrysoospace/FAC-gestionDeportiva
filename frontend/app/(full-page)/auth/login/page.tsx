@@ -9,10 +9,19 @@ import { Password } from 'primereact/password';
 import AuthCard from '../components/AuthCard';
 import AuthLoading from '../components/AuthLoading';
 import SocialLoginButtons from '../components/SocialLoginButtons';
+import TwoFactorStep from './TwoFactorStep';
 import { useLogin } from './useLogin';
 
 const LoginPageContent = () => {
-    const { email, setEmail, password, setPassword, submitting, busy, error, success, submit, socialProvider, signInWith } = useLogin();
+    const { email, setEmail, password, setPassword, submitting, busy, error, success, submit, challenge, nextPath, cancelSecondFactor, socialProvider, signInWith } = useLogin();
+
+    if (challenge) {
+        return (
+            <AuthCard title="Verificación en dos pasos" subtitle="Escribe el código que enviamos a tu correo" icon="pi-shield">
+                <TwoFactorStep challenge={challenge} nextPath={nextPath} onCancel={cancelSecondFactor} />
+            </AuthCard>
+        );
+    }
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();

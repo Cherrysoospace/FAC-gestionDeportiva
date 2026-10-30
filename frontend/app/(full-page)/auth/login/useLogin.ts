@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/layout/context/authcontext';
 import { ApiRequestError } from '@/lib/api';
 import { PASSWORD_RESET_SUCCESS_KEY } from '@/lib/password-recovery-api';
+import { cancelTwoFactor } from '@/lib/two-factor-api';
+import { TwoFactorChallenge } from '@/types/two-factor';
 import { useSocialLogin } from '../hooks/useSocialLogin';
 
 const REGISTRATION_SUCCESS_KEY = 'registrationSuccess';
@@ -35,6 +37,7 @@ export function useLogin() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [challenge, setChallenge] = useState<TwoFactorChallenge | null>(null);
     const social = useSocialLogin(nextPath, setError);
 
     useEffect(() => {
@@ -58,12 +61,26 @@ export function useLogin() {
         setError(null);
         setSubmitting(true);
         try {
-            await loginWithCredentials(email, password, nextPath);
+            const outcome = await loginWithCredentials(email, password, nextPath);
+            if (outcome.status === 'two-factor-required') {
+                setChallenge(outcome.challenge);
+                setPassword('');
+                setSuccess(null);
+            }
         } catch (cause) {
             setError(loginErrorMessage(cause));
         } finally {
             setSubmitting(false);
         }
+    };
+
+    // Abandonar el segundo factor anula el reto: no queda acceso a medias
+    const cancelSecondFactor = () => {
+        if (challenge) {
+            void cancelTwoFactor(challenge.challengeId).catch(() => undefined);
+        }
+        setChallenge(null);
+        setError(null);
     };
 
     return {
@@ -76,6 +93,9 @@ export function useLogin() {
         error,
         success,
         submit,
+        challenge,
+        nextPath,
+        cancelSecondFactor,
         socialProvider: social.loadingProvider,
         signInWith: social.signIn
     };

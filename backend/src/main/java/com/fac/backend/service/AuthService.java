@@ -2,6 +2,7 @@ package com.fac.backend.service;
 
 import com.fac.backend.dto.AuthResponseDTO;
 import com.fac.backend.dto.LoginRequestDTO;
+import com.fac.backend.dto.LoginResponseDTO;
 import com.fac.backend.dto.MeResponseDTO;
 import com.fac.backend.dto.RegisterRequestDTO;
 import com.fac.backend.dto.role.RoleResponseDTO;
@@ -35,9 +36,14 @@ public class AuthService {
     private final EffectivePermissionService effectivePermissionService;
     private final PermissionCatalogService permissionCatalogService;
     private final RoleMapper roleMapper;
+    private final TwoFactorService twoFactorService;
 
+    /**
+     * Con 2FA activo no se emite token todavía: se devuelve el reto y la
+     * sesión solo se crea en {@link #completeTwoFactorLogin} (HU-SE-10).
+     */
     @Transactional
-    public AuthResponseDTO login(LoginRequestDTO dto) {
+    public LoginResponseDTO login(LoginRequestDTO dto) {
         User user = userRepository.findByEmailIgnoreCase(normalizeEmail(dto.getEmail()))
                 .orElseThrow(this::unauthorized);
 
@@ -48,6 +54,22 @@ public class AuthService {
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw unauthorized();
         }
+
+        ensureEnabled(user);
+
+        if (user.requiresTwoFactor()) {
+            return LoginResponseDTO.twoFactorRequired(
+                    twoFactorService.startChallenge(user)
+            );
+        }
+
+        return LoginResponseDTO.authenticated(issueSession(user));
+    }
+
+    // Los intentos fallidos del código deben guardarse aunque se lance el error
+    @Transactional(noRollbackFor = ApplicationException.class)
+    public AuthResponseDTO completeTwoFactorLogin(String challengeId, String code) {
+        User user = twoFactorService.verify(challengeId, code);
 
         ensureEnabled(user);
 

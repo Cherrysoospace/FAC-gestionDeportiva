@@ -10,12 +10,15 @@ import PageHeader from '@/components/ui/PageHeader';
 import { PersonalDataInput } from '@/types/profile';
 import PersonalDataForm from '@/components/profile/PersonalDataForm';
 import ProfilePhotoCard from './components/ProfilePhotoCard';
+import TwoFactorCard from './components/TwoFactorCard';
 import { ActionResult } from '@/types/action';
 import { useMyProfile } from './hooks/useMyProfile';
+import { useTwoFactorSettings } from './hooks/useTwoFactorSettings';
 
 export default function MyProfilePage() {
     const toast = useRef<Toast>(null);
     const { profile, loading, loadError, saving, photoBusy, savePersonalData, uploadPhoto, removePhoto, reload } = useMyProfile();
+    const twoFactor = useTwoFactorSettings();
 
     const notify = (result: ActionResult, successText: string) => {
         toast.current?.show(
@@ -27,6 +30,11 @@ export default function MyProfilePage() {
 
     const handleSave = async (data: PersonalDataInput) => notify(await savePersonalData(data), 'Tus datos se guardaron.');
     const handleUpload = async (file: File) => notify(await uploadPhoto(file), 'Tu foto se actualizó.');
+    const handleTwoFactorChange = async (enabled: boolean, currentPassword: string) => {
+        const result = await twoFactor.changeStatus(enabled, currentPassword);
+        notify(result, enabled ? 'La autenticación de dos factores quedó activada.' : 'La autenticación de dos factores quedó desactivada.');
+        return result.ok;
+    };
     const handleRemove = () =>
         confirmDialog({
             header: 'Quitar foto',
@@ -43,7 +51,7 @@ export default function MyProfilePage() {
             <Toast ref={toast} />
             <ConfirmDialog />
             <div className="col-12">
-                <PageHeader title="Mi perfil" subtitle="Mantén actualizados tus datos personales y tu foto de perfil." breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Mi perfil' }]} />
+                <PageHeader title="Mi perfil" subtitle="Mantén actualizados tus datos personales, tu foto de perfil y la seguridad de tu cuenta." breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Mi perfil' }]} />
             </div>
 
             {loadError && (
@@ -71,6 +79,16 @@ export default function MyProfilePage() {
                     </div>
                     <div className="col-12 lg:col-8">
                         <PersonalDataForm profile={profile} saving={saving} onSave={handleSave} />
+                    </div>
+                    <div className="col-12">
+                        <TwoFactorCard
+                            status={twoFactor.status}
+                            authProvider={profile.authProvider}
+                            loading={twoFactor.loading}
+                            loadError={twoFactor.loadError}
+                            saving={twoFactor.saving}
+                            onChange={handleTwoFactorChange}
+                        />
                     </div>
                 </>
             )}
