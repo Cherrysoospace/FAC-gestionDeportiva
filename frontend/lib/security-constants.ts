@@ -13,6 +13,48 @@ export const ROLE_PERMISSIONS_VIEW_ENDPOINTS: EndpointRequirement[] = [
     { url: '/api/roles/{id}/permissions', method: 'PUT' }
 ];
 
+export const ROLES_VIEW_ENDPOINTS: EndpointRequirement[] = [
+    { url: '/api/roles', method: 'GET' }
+];
+
+export const ROLE_CREATE_ENDPOINT: EndpointRequirement = {
+    url: '/api/roles',
+    method: 'POST'
+};
+
+export const ROLE_UPDATE_ENDPOINT: EndpointRequirement = {
+    url: '/api/roles/{id}',
+    method: 'PUT'
+};
+
+export const ROLE_DELETE_ENDPOINT: EndpointRequirement = {
+    url: '/api/roles/{id}',
+    method: 'DELETE'
+};
+
+export const ROLE_USERS_VIEW_ENDPOINTS: EndpointRequirement[] = [
+    { url: '/api/roles', method: 'GET' }
+];
+
+export const PERMISSIONS_VIEW_ENDPOINTS: EndpointRequirement[] = [
+    { url: '/api/permissions', method: 'GET' }
+];
+
+export const PERMISSION_CREATE_ENDPOINT: EndpointRequirement = {
+    url: '/api/permissions',
+    method: 'POST'
+};
+
+export const PERMISSION_UPDATE_ENDPOINT: EndpointRequirement = {
+    url: '/api/permissions/{id}',
+    method: 'PUT'
+};
+
+export const PERMISSION_DELETE_ENDPOINT: EndpointRequirement = {
+    url: '/api/permissions/{id}',
+    method: 'DELETE'
+};
+
 export const USERS_VIEW_ENDPOINTS: EndpointRequirement[] = [
     { url: '/api/users', method: 'GET' }
 ];

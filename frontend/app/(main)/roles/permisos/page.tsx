@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from 'primereact/button';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Message } from 'primereact/message';
-import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { classNames } from 'primereact/utils';
 import LoadingState from '@/components/ui/LoadingState';
@@ -34,7 +33,12 @@ export default function RolePermissionsPage() {
 
 function RolePermissionsContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const requestedRoleId = Number(searchParams.get('roleId'));
+    const appliedQueryRoleRef = useRef<number | null>(null);
     const toast = useRef<Toast>(null);
+    const [savedBannerVisible, setSavedBannerVisible] = useState(false);
+
     const {
         roles,
         catalog,
@@ -60,6 +64,27 @@ function RolePermissionsContent() {
         reset,
         save
     } = useRolePermissions();
+
+    useEffect(() => {
+        if (
+            !initialLoading &&
+            Number.isInteger(requestedRoleId) &&
+            requestedRoleId > 0 &&
+            appliedQueryRoleRef.current !== requestedRoleId &&
+            roles.some((role) => role.id === requestedRoleId)
+        ) {
+            appliedQueryRoleRef.current = requestedRoleId;
+            if (selectedRoleId !== requestedRoleId) {
+                void selectRole(requestedRoleId);
+            }
+        }
+    }, [initialLoading, requestedRoleId, roles, selectRole, selectedRoleId]);
+
+    useEffect(() => {
+        if (dirty) {
+            setSavedBannerVisible(false);
+        }
+    }, [dirty]);
 
     useEffect(() => {
         if (!dirty) {
@@ -95,9 +120,7 @@ function RolePermissionsContent() {
                 return;
             }
 
-            const anchor = event.target.closest<HTMLAnchorElement>(
-                'a[href]'
-            );
+            const anchor = event.target.closest<HTMLAnchorElement>('a[href]');
 
             if (
                 !anchor ||
@@ -157,6 +180,7 @@ function RolePermissionsContent() {
         const success = await save();
 
         if (success) {
+            setSavedBannerVisible(true);
             toast.current?.show({
                 severity: 'success',
                 summary: 'Permisos actualizados correctamente.',
@@ -197,24 +221,6 @@ function RolePermissionsContent() {
         });
     };
 
-    const handleBack = () => {
-        if (!dirty) {
-            router.push('/');
-            return;
-        }
-
-        confirmDialog({
-            message:
-                'Tienes cambios sin guardar. Si sales de esta vista, se perderán. ¿Deseas continuar?',
-            header: 'Cambios sin guardar',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'Salir sin guardar',
-            rejectLabel: 'Cancelar',
-            accept: () => router.push('/'),
-            reject: () => undefined
-        });
-    };
-
     const handleReload = () => {
         if (!dirty) {
             void reloadRole();
@@ -239,6 +245,7 @@ function RolePermissionsContent() {
         }
 
         if (!dirty) {
+            setSavedBannerVisible(false);
             void selectRole(roleId);
             return;
         }
@@ -250,7 +257,10 @@ function RolePermissionsContent() {
             icon: 'pi pi-exclamation-triangle',
             acceptLabel: 'Cambiar de rol',
             rejectLabel: 'Cancelar',
-            accept: () => void selectRole(roleId),
+            accept: () => {
+                setSavedBannerVisible(false);
+                void selectRole(roleId);
+            },
             reject: () => undefined
         });
     };
@@ -301,15 +311,19 @@ function RolePermissionsContent() {
     return (
         <>
             <PageHeader
-                title="Asignar permisos a roles"
-                subtitle="Elige un rol y marca las acciones que podrán realizar las personas que lo tengan."
-                breadcrumb={[{ label: 'Inicio', href: '/' }, { label: 'Asignar permisos' }]}
+                title="Asignar Permisos a Roles"
+                subtitle="Administra de manera centralizada los permisos que puede ejecutar cada rol del sistema."
+                breadcrumb={[
+                    { label: 'Inicio', href: '/' },
+                    { label: 'Roles', href: '/roles' },
+                    { label: 'Asignar permisos' }
+                ]}
                 actions={
                     <Button
-                        label="Volver al inicio"
-                        icon="pi pi-arrow-left"
-                        text
-                        onClick={handleBack}
+                        label="Ir a Roles"
+                        icon="pi pi-shield"
+                        outlined
+                        onClick={() => router.push('/roles')}
                     />
                 }
             />
@@ -330,89 +344,103 @@ function RolePermissionsContent() {
                 </div>
             )}
 
-            <div className="card mb-4">
-                <div className="flex flex-column xl:flex-row xl:align-items-end gap-3">
-                    <div className="flex-1">
-                        <RoleSelector
-                            roles={roles}
-                            value={selectedRoleId}
-                            loading={roleLoading}
-                            disabled={saving}
-                            onChange={handleRoleChange}
-                        />
-                    </div>
-                    <div className="flex align-items-center gap-2 flex-wrap">
-                        {selectedRole && (
-                            <Tag
-                                value={
-                                    selectedRole.active
-                                        ? 'Activo'
-                                        : 'Inactivo'
-                                }
-                                severity={
-                                    selectedRole.active ? 'success' : 'danger'
-                                }
-                            />
-                        )}
-                        {dirty ? (
-                            <Tag
-                                value="Cambios sin guardar"
-                                severity="warning"
-                            />
-                        ) : (
-                            <Tag
-                                value="Sin cambios pendientes"
-                                severity="success"
-                            />
-                        )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            label="Cargar permisos"
-                            icon="pi pi-refresh"
-                            outlined
-                            loading={roleLoading}
-                            disabled={saving || selectedRoleId === null}
-                            onClick={handleReload}
-                        />
-                        <Button
-                            label="Restablecer"
-                            icon="pi pi-undo"
-                            outlined
-                            disabled={
-                                !dirty || saving || selectedRoleId === null
-                            }
-                            onClick={handleReset}
-                        />
-                        <Button
-                            label="Guardar cambios"
-                            icon="pi pi-check"
-                            loading={saving}
-                            disabled={
-                                !dirty || selectedRoleId === null || loading
-                            }
-                            onClick={handleSave}
-                        />
-                    </div>
-                </div>
-
-                <Message
-                    severity="info"
-                    className="w-full mt-3"
-                    text="Los permisos seleccionados se conservarán después de cerrar e iniciar sesión nuevamente."
-                />
-
-                {saveError && (
-                    <Message
-                        severity="error"
-                        text={saveError}
-                        className="w-full mt-3"
-                    />
-                )}
-            </div>
-
             <div className="grid">
                 <div className="col-12 lg:col-8">
+                    <div className="card mb-3">
+                        <div className="flex flex-column xl:flex-row xl:align-items-end justify-content-between gap-3">
+                            <div className="flex-1">
+                                <RoleSelector
+                                    roles={roles}
+                                    value={selectedRoleId}
+                                    loading={roleLoading}
+                                    disabled={saving}
+                                    onChange={handleRoleChange}
+                                />
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    label="Cargar permisos"
+                                    icon="pi pi-plus-circle"
+                                    outlined
+                                    loading={roleLoading}
+                                    disabled={saving || selectedRoleId === null}
+                                    onClick={handleReload}
+                                />
+                                <Button
+                                    label="Guardar cambios"
+                                    icon="pi pi-save"
+                                    loading={saving}
+                                    disabled={
+                                        !dirty ||
+                                        selectedRoleId === null ||
+                                        loading
+                                    }
+                                    onClick={handleSave}
+                                />
+                                <Button
+                                    label="Restablecer"
+                                    icon="pi pi-refresh"
+                                    outlined
+                                    disabled={
+                                        !dirty ||
+                                        saving ||
+                                        selectedRoleId === null
+                                    }
+                                    onClick={handleReset}
+                                />
+                            </div>
+                        </div>
+
+                        {saveError && (
+                            <Message
+                                severity="error"
+                                text={saveError}
+                                className="w-full mt-3"
+                            />
+                        )}
+                    </div>
+
+                    <div className="grid mb-2">
+                        {savedBannerVisible && (
+                            <div className="col-12 md:col-6">
+                                <div className="flex align-items-center justify-content-between p-3 border-round border-1 border-green-500 surface-card">
+                                    <span className="flex align-items-center gap-2 text-green-500 font-medium text-sm">
+                                        <i
+                                            className="pi pi-check-circle"
+                                            aria-hidden="true"
+                                        />
+                                        <span>
+                                            Permisos actualizados correctamente.
+                                        </span>
+                                    </span>
+                                    <Button
+                                        icon="pi pi-times"
+                                        text
+                                        rounded
+                                        size="small"
+                                        aria-label="Cerrar mensaje de confirmación"
+                                        onClick={() =>
+                                            setSavedBannerVisible(false)
+                                        }
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        <div
+                            className={
+                                savedBannerVisible
+                                    ? 'col-12 md:col-6'
+                                    : 'col-12'
+                            }
+                        >
+                            <Message
+                                severity="info"
+                                className="w-full justify-content-start"
+                                text="Los permisos seleccionados se conservarán después de cerrar e iniciar sesión nuevamente."
+                            />
+                        </div>
+                    </div>
+
                     <div
                         className={classNames(styles.matrixArea, {
                             [styles.matrixAreaBusy]: roleLoading
@@ -438,8 +466,6 @@ function RolePermissionsContent() {
                         modules={localModules}
                         dirty={dirty}
                         loading={roleLoading}
-                        saving={saving}
-                        onSave={handleSave}
                     />
                 </div>
             </div>

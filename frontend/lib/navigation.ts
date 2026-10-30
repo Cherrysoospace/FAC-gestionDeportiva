@@ -1,5 +1,10 @@
 import { EndpointRequirement } from '@/types/security';
-import { ROLE_PERMISSIONS_VIEW_ENDPOINTS, USERS_VIEW_ENDPOINTS } from './security-constants';
+import {
+    PERMISSIONS_VIEW_ENDPOINTS,
+    ROLE_PERMISSIONS_VIEW_ENDPOINTS,
+    ROLES_VIEW_ENDPOINTS,
+    USERS_VIEW_ENDPOINTS
+} from './security-constants';
 
 export interface AppModule {
     label: string;
@@ -21,12 +26,28 @@ export const APP_MODULES: AppModule[] = [
         requiredEndpoints: USERS_VIEW_ENDPOINTS
     },
     {
+        label: 'Roles',
+        description: 'Administra los roles del sistema y los usuarios asociados a cada rol.',
+        icon: 'pi-shield',
+        to: '/roles',
+        section: 'Seguridad',
+        requiredEndpoints: ROLES_VIEW_ENDPOINTS
+    },
+    {
         label: 'Asignar permisos',
-        description: 'Define qué puede hacer cada rol dentro del sistema.',
+        description: 'Define en la matriz qué puede hacer cada rol dentro del sistema.',
         icon: 'pi-lock',
         to: '/roles/permisos',
         section: 'Seguridad',
         requiredEndpoints: ROLE_PERMISSIONS_VIEW_ENDPOINTS
+    },
+    {
+        label: 'Permisos',
+        description: 'Gestiona el catálogo de permisos por recurso, método HTTP y operación.',
+        icon: 'pi-key',
+        to: '/permisos',
+        section: 'Seguridad',
+        requiredEndpoints: PERMISSIONS_VIEW_ENDPOINTS
     },
     {
         label: 'Mi perfil',

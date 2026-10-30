@@ -23,7 +23,7 @@ export default function RoleSelector({
         <div className="flex flex-column gap-2">
             <label
                 htmlFor="role-selector"
-                className="text-900 font-medium"
+                className="text-700 text-sm font-medium"
             >
                 Rol seleccionado
             </label>
@@ -45,24 +45,51 @@ export default function RoleSelector({
                     }
                 }}
                 itemTemplate={(role: RoleSummary) => (
-                    <div className="flex align-items-center justify-content-between gap-2">
+                    <div className="flex align-items-center justify-content-between gap-2 w-full">
                         <span className="flex align-items-center gap-2">
-                            {role.id === value && (
-                                <i className="pi pi-check text-primary text-xs" />
+                            <i
+                                className={`pi pi-user ${
+                                    role.id === value
+                                        ? 'text-primary'
+                                        : 'text-600'
+                                }`}
+                                aria-hidden="true"
+                            />
+                            <span
+                                className={
+                                    role.id === value
+                                        ? 'font-semibold text-primary'
+                                        : 'text-900'
+                                }
+                            >
+                                {role.name}
+                            </span>
+                            {!role.active && (
+                                <Tag
+                                    value="Inactivo"
+                                    severity="danger"
+                                    className="text-xs"
+                                />
                             )}
-                            <span>{role.name}</span>
                         </span>
-                        <Tag
-                            value={role.active ? 'Activo' : 'Inactivo'}
-                            severity={role.active ? 'success' : 'danger'}
-                            className="text-xs"
-                        />
+                        {role.id === value && (
+                            <i
+                                className="pi pi-check text-primary text-sm"
+                                aria-hidden="true"
+                            />
+                        )}
                     </div>
                 )}
                 valueTemplate={(role: RoleSummary | null) =>
                     role ? (
                         <span className="flex align-items-center gap-2">
-                            <span>{role.name}</span>
+                            <i
+                                className="pi pi-user text-primary"
+                                aria-hidden="true"
+                            />
+                            <span className="font-medium text-900">
+                                {role.name}
+                            </span>
                             {!role.active && (
                                 <Tag
                                     value="Inactivo"

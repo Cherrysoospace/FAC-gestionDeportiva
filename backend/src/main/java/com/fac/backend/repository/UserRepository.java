@@ -35,4 +35,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @EntityGraph(attributePaths = {"userRoles", "userRoles.role"})
     Optional<User> findWithRolesById(Long id);
+
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT u
+            FROM User u
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM UserRole ur
+                WHERE ur.user = u
+                  AND ur.role.id = :roleId
+            )
+            ORDER BY u.name ASC
+            """)
+    java.util.List<User> findAvailableByRoleId(
+            @org.springframework.data.repository.query.Param("roleId") Long roleId
+    );
 }

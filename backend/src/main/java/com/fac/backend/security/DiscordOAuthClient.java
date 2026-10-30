@@ -4,6 +4,7 @@ import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -12,30 +13,47 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 /**
- * Intercambia el code de Discord por un access token (usando el client secret,
- * que solo vive en el backend) y obtiene la identidad del usuario.
+ * Estrategia OAuth 2.0 para Discord: intercambia el code por un access token
+ * en el backend y consulta la identidad del usuario.
  */
 @Component
-public class DiscordOAuthClient {
+public class DiscordOAuthClient implements OAuthCodeProviderStrategy {
 
+    public static final String PROVIDER_ID = "discord";
     private static final String TOKEN_URL = "https://discord.com/api/oauth2/token";
     private static final String USER_URL = "https://discord.com/api/users/@me";
 
     private final String clientId;
     private final String clientSecret;
     private final List<String> allowedRedirectUris;
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
 
+    @Autowired
     public DiscordOAuthClient(
             @Value("${discord.client-id:}") String clientId,
             @Value("${discord.client-secret:}") String clientSecret,
             @Value("${discord.allowed-redirect-uris:http://localhost:3000/auth/discord/callback}")
             List<String> allowedRedirectUris) {
+        this(clientId, clientSecret, allowedRedirectUris, RestClient.create());
+    }
+
+    DiscordOAuthClient(
+            String clientId,
+            String clientSecret,
+            List<String> allowedRedirectUris,
+            RestClient restClient) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.allowedRedirectUris = allowedRedirectUris;
+        this.restClient = restClient;
     }
 
+    @Override
+    public boolean supports(String provider) {
+        return PROVIDER_ID.equalsIgnoreCase(provider);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public FirebaseIdentity authenticate(String code, String redirectUri) {
         if (clientId.isBlank() || clientSecret.isBlank()) {
@@ -95,7 +113,7 @@ public class DiscordOAuthClient {
                     : "https://cdn.discordapp.com/avatars/" + id + "/"
                             + user.get("avatar") + ".png";
 
-            return new FirebaseIdentity("discord", id, email, name, avatar);
+            return new FirebaseIdentity(PROVIDER_ID, id, email, name, avatar);
         } catch (ApplicationException ex) {
             throw ex;
         } catch (Exception ex) {

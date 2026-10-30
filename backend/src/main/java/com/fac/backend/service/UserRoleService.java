@@ -29,6 +29,7 @@ public class UserRoleService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final UserRoleMapper userRoleMapper;
+    private final com.fac.backend.mapper.UserMapper userMapper;
 
     @CacheEvict(
             cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
@@ -60,9 +61,17 @@ public class UserRoleService {
         return userRoleMapper.toResponseDTOList(userRoleRepository.findAllByUserId(userId));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<RoleUserResponseDTO> findByRoleId(Long roleId) {
         return userRoleMapper.toRoleUserResponseDTOList(userRoleRepository.findAllByRoleId(roleId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.fac.backend.dto.user.UserResponseDTO> findAvailableUsersByRoleId(Long roleId) {
+        if (!roleRepository.existsById(roleId)) {
+            throw new ApplicationException(ErrorCase.NOT_FOUND, "Rol no encontrado");
+        }
+        return userMapper.toResponseDTOList(userRepository.findAvailableByRoleId(roleId));
     }
 
     @CacheEvict(

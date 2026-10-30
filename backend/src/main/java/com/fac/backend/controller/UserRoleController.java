@@ -39,6 +39,12 @@ public class UserRoleController {
         return userRoleService.findByRoleId(roleId);
     }
 
+    @GetMapping("/roles/{roleId}/available-users")
+    public List<com.fac.backend.dto.user.UserResponseDTO> findAvailableUsersByRoleId(
+            @PathVariable Long roleId) {
+        return userRoleService.findAvailableUsersByRoleId(roleId);
+    }
+
     @DeleteMapping("/{userId}/{roleId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long userId, @PathVariable Long roleId) {

@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Accordion, AccordionTab } from 'primereact/accordion';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Checkbox } from 'primereact/checkbox';
 import { Message } from 'primereact/message';
 import EmptyState from '@/components/ui/EmptyState';
@@ -26,6 +25,24 @@ const OPERATIONS: Array<{
     { key: 'ELIMINAR', label: 'Eliminar' }
 ];
 
+const RESOURCE_ICONS: Record<string, string> = {
+    Usuarios: 'pi-users',
+    Roles: 'pi-user',
+    Permisos: 'pi-key',
+    'Asignación de roles': 'pi-id-card',
+    'Asignación de permisos': 'pi-lock',
+    Torneos: 'pi-trophy',
+    Equipos: 'pi-users',
+    Jugadores: 'pi-user',
+    Partidos: 'pi-globe',
+    Entradas: 'pi-ticket',
+    Escenarios: 'pi-building',
+    Reportes: 'pi-chart-bar',
+    Perfiles: 'pi-id-card',
+    Sesiones: 'pi-desktop',
+    Autenticación: 'pi-shield'
+};
+
 interface PermissionMatrixProps {
     catalog: PermissionCatalog | null;
     selectedIds: Set<number>;
@@ -48,8 +65,10 @@ function permissionsForOperation(
     );
 }
 
-// Deja solo los recursos cuyo nombre (o el de su módulo) contiene el texto buscado.
-function filterModules(modules: PermissionModule[], query: string): PermissionModule[] {
+function filterModules(
+    modules: PermissionModule[],
+    query: string
+): PermissionModule[] {
     const term = query.trim().toLowerCase();
     if (!term) return modules;
 
@@ -73,36 +92,31 @@ export default function PermissionMatrix({
     disabled = false,
     onToggle
 }: PermissionMatrixProps) {
-    const [activeModules, setActiveModules] = useState<number[]>([]);
+    const [collapsedModules, setCollapsedModules] = useState<Set<string>>(
+        () => new Set()
+    );
     const [query, setQuery] = useState('');
+
     const visibleModules = useMemo(
         () => filterModules(catalog?.modules ?? [], query),
         [catalog, query]
     );
-    // Al buscar se despliegan todos los módulos con coincidencias
-    const activeIndex = query.trim()
-        ? visibleModules.map((_, index) => index)
-        : activeModules;
 
     useEffect(() => {
-        setActiveModules(
-            catalog ? catalog.modules.map((_, index) => index) : []
-        );
+        setCollapsedModules(new Set());
     }, [catalog]);
 
-    const moduleStats = useMemo(() => {
-        const stats = new Map<string, { assigned: number; total: number }>();
-
-        for (const permissionModule of catalog?.modules ?? []) {
-            const ids = modulePermissionIds(permissionModule);
-            stats.set(permissionModule.name, {
-                assigned: ids.filter((id) => selectedIds.has(id)).length,
-                total: ids.length
-            });
-        }
-
-        return stats;
-    }, [catalog, selectedIds]);
+    const toggleModuleCollapse = (moduleName: string) => {
+        setCollapsedModules((previous) => {
+            const next = new Set(previous);
+            if (next.has(moduleName)) {
+                next.delete(moduleName);
+            } else {
+                next.add(moduleName);
+            }
+            return next;
+        });
+    };
 
     if (!catalog || catalog.modules.length === 0) {
         return (
@@ -116,22 +130,17 @@ export default function PermissionMatrix({
         );
     }
 
+    const isSearching = query.trim().length > 0;
+
     return (
         <div className="card">
-            <div className="flex flex-column md:flex-row md:align-items-start md:justify-content-between gap-3 mb-3">
-                <div className="flex flex-column gap-1">
-                    <h5 className="m-0">Permisos del rol</h5>
-                    <span className="text-600 text-sm">
-                        Marca las acciones que podrá realizar el rol en cada
-                        sección. El contador junto a una casilla indica cuántos
-                        permisos del grupo están asignados.
-                    </span>
-                </div>
+            <div className="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-3 mb-3">
+                <h5 className="m-0">Matriz de permisos del rol</h5>
                 <SearchInput
                     value={query}
                     onChange={setQuery}
                     ariaLabel="Buscar permisos por recurso o módulo"
-                    placeholder="Buscar recurso o módulo"
+                    placeholder="Buscar recurso o módulo..."
                 />
             </div>
 
@@ -143,209 +152,300 @@ export default function PermissionMatrix({
                 />
             )}
 
-            {visibleModules.length === 0 && (
+            {visibleModules.length === 0 ? (
                 <EmptyState
                     icon="pi-search"
                     title="Ningún recurso coincide con la búsqueda."
                     description="Prueba con otro nombre o borra el texto para ver todos los permisos."
                 />
-            )}
+            ) : (
+                <div className={styles.matrixWrapper}>
+                    <table className={styles.matrixTable}>
+                        <thead>
+                            <tr>
+                                <th scope="col">Recurso</th>
+                                {OPERATIONS.map((operation) => (
+                                    <th key={operation.key} scope="col">
+                                        {operation.label}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {visibleModules.map((permissionModule) => {
+                                const moduleIds =
+                                    modulePermissionIds(permissionModule);
+                                const assignedInModule = moduleIds.filter(
+                                    (id) => selectedIds.has(id)
+                                ).length;
+                                const allModuleSelected =
+                                    moduleIds.length > 0 &&
+                                    assignedInModule === moduleIds.length;
+                                const isCollapsed =
+                                    !isSearching &&
+                                    collapsedModules.has(permissionModule.name);
 
-            <Accordion
-                multiple
-                activeIndex={activeIndex}
-                onTabChange={(event) => {
-                    if (query.trim()) return;
-                    const index = event.index;
-                    setActiveModules(
-                        Array.isArray(index)
-                            ? index
-                            : typeof index === 'number'
-                              ? [index]
-                              : []
-                    );
-                }}
-            >
-                {visibleModules.map((permissionModule) => {
-                    const stats = moduleStats.get(permissionModule.name);
-
-                    return (
-                        <AccordionTab
-                            key={permissionModule.name}
-                            header={
-                                <div className="flex align-items-center justify-content-between w-full pr-2 gap-3">
-                                    <span className="font-medium text-900">
-                                        {permissionModule.name}
-                                    </span>
-                                    <span className="text-600 text-sm">
-                                        {stats?.assigned ?? 0} /{' '}
-                                        {stats?.total ?? 0} permisos
-                                    </span>
-                                </div>
-                            }
-                        >
-                            <div className={styles.matrixWrapper}>
-                                <table className={styles.matrixTable}>
-                                    <thead>
-                                        <tr>
-                                            <th scope="col" className="text-left">
-                                                Recurso
-                                            </th>
-                                            {OPERATIONS.map((operation) => (
-                                                <th
-                                                    key={operation.key}
-                                                    scope="col"
-                                                >
-                                                    {operation.label}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {permissionModule.resources.map((resource) => (
-                                            <tr key={resource.name}>
-                                                <td
-                                                    role="rowheader"
-                                                    className={styles.resourceName}
-                                                >
-                                                    {resource.name}
-                                                </td>
-                                                {OPERATIONS.map((operation) => {
-                                                    const permissions =
-                                                        permissionsForOperation(
-                                                            resource,
-                                                            operation.key
-                                                        );
-
-                                                    if (permissions.length === 0) {
-                                                        return (
-                                                            <td
-                                                                key={
-                                                                    operation.key
-                                                                }
-                                                                className={
-                                                                    styles.checkboxCell
-                                                                }
-                                                            >
-                                                                <span className="text-400">
-                                                                    —
-                                                                </span>
-                                                            </td>
-                                                        );
-                                                    }
-
-                                                    const selectedCount =
-                                                        permissions.filter(
-                                                            (permission) =>
-                                                                selectedIds.has(
-                                                                    permission.id
-                                                                )
-                                                        ).length;
-                                                    const allSelected =
-                                                        selectedCount ===
-                                                        permissions.length;
-                                                    const inputId = `permission-group-${permissions[0].id}`;
-                                                    const groupLabel = `${operation.label} ${resource.name}`;
-                                                    const permissionUrls =
-                                                        permissions
-                                                            .map(
-                                                                (permission) =>
-                                                                    `${permission.method} ${permission.url}`
+                                return (
+                                    <Fragment key={permissionModule.name}>
+                                        <tr className={styles.moduleGroupRow}>
+                                            <td colSpan={OPERATIONS.length + 1}>
+                                                <div className="flex align-items-center justify-content-between gap-3">
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            styles.moduleToggleBtn
+                                                        }
+                                                        onClick={() =>
+                                                            toggleModuleCollapse(
+                                                                permissionModule.name
                                                             )
-                                                            .join('\n');
+                                                        }
+                                                        aria-expanded={
+                                                            !isCollapsed
+                                                        }
+                                                    >
+                                                        <i
+                                                            className={`pi ${
+                                                                isCollapsed
+                                                                    ? 'pi-chevron-right'
+                                                                    : 'pi-chevron-down'
+                                                            } text-xs`}
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span>
+                                                            {
+                                                                permissionModule.name
+                                                            }
+                                                        </span>
+                                                    </button>
+                                                    <div className="flex align-items-center gap-2">
+                                                        <span className="text-600 text-xs font-normal">
+                                                            {assignedInModule}/
+                                                            {moduleIds.length}{' '}
+                                                            asignados
+                                                        </span>
+                                                        <Checkbox
+                                                            inputId={`module-check-${permissionModule.name}`}
+                                                            inputRef={(
+                                                                element
+                                                            ) => {
+                                                                if (element) {
+                                                                    element.indeterminate =
+                                                                        assignedInModule >
+                                                                            0 &&
+                                                                        !allModuleSelected;
+                                                                }
+                                                            }}
+                                                            checked={
+                                                                allModuleSelected
+                                                            }
+                                                            disabled={disabled}
+                                                            aria-label={`Seleccionar todos los permisos de ${permissionModule.name}`}
+                                                            onChange={(event) =>
+                                                                onToggle(
+                                                                    moduleIds,
+                                                                    Boolean(
+                                                                        event.checked
+                                                                    )
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        {!isCollapsed &&
+                                            permissionModule.resources.map(
+                                                (resource) => {
+                                                    const iconClass =
+                                                        RESOURCE_ICONS[
+                                                            resource.name
+                                                        ] ?? 'pi-folder';
 
                                                     return (
-                                                        <td
-                                                            key={operation.key}
+                                                        <tr
+                                                            key={`${permissionModule.name}-${resource.name}`}
                                                             className={
-                                                                styles.checkboxCell
+                                                                styles.resourceRow
                                                             }
                                                         >
-                                                            <div
+                                                            <td
+                                                                role="rowheader"
                                                                 className={
-                                                                    styles.permissionGroup
+                                                                    styles.resourceName
                                                                 }
                                                             >
-                                                                <Checkbox
-                                                                    inputId={
-                                                                        inputId
-                                                                    }
-                                                                    inputRef={(
-                                                                        element
-                                                                    ) => {
-                                                                        if (
-                                                                            element
-                                                                        ) {
-                                                                            element.indeterminate =
-                                                                                selectedCount >
-                                                                                    0 &&
-                                                                                !allSelected;
+                                                                <span className="flex align-items-center gap-2">
+                                                                    <i
+                                                                        className={`pi ${iconClass} text-600`}
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    <span>
+                                                                        {
+                                                                            resource.name
                                                                         }
-                                                                    }}
-                                                                    checked={
-                                                                        allSelected
+                                                                    </span>
+                                                                </span>
+                                                            </td>
+                                                            {OPERATIONS.map(
+                                                                (operation) => {
+                                                                    const permissions =
+                                                                        permissionsForOperation(
+                                                                            resource,
+                                                                            operation.key
+                                                                        );
+
+                                                                    if (
+                                                                        permissions.length ===
+                                                                        0
+                                                                    ) {
+                                                                        return (
+                                                                            <td
+                                                                                key={
+                                                                                    operation.key
+                                                                                }
+                                                                                className={
+                                                                                    styles.checkboxCell
+                                                                                }
+                                                                            >
+                                                                                <Checkbox
+                                                                                    checked={
+                                                                                        false
+                                                                                    }
+                                                                                    disabled
+                                                                                    aria-label={`${operation.label} ${resource.name} (no disponible)`}
+                                                                                />
+                                                                            </td>
+                                                                        );
                                                                     }
-                                                                    disabled={
-                                                                        disabled
-                                                                    }
-                                                                    aria-label={`${groupLabel}${permissions.length > 1 ? ` (${permissions.length} permisos)` : ''}`}
-                                                                    onChange={(
-                                                                        event
-                                                                    ) =>
-                                                                        onToggle(
-                                                                            permissions.map(
+
+                                                                    const selectedCount =
+                                                                        permissions.filter(
+                                                                            (
+                                                                                permission
+                                                                            ) =>
+                                                                                selectedIds.has(
+                                                                                    permission.id
+                                                                                )
+                                                                        ).length;
+                                                                    const allSelected =
+                                                                        selectedCount ===
+                                                                        permissions.length;
+                                                                    const inputId = `permission-group-${permissions[0].id}`;
+                                                                    const groupLabel = `${operation.label} ${resource.name}`;
+                                                                    const permissionUrls =
+                                                                        permissions
+                                                                            .map(
                                                                                 (
                                                                                     permission
                                                                                 ) =>
-                                                                                    permission.id
-                                                                            ),
-                                                                            Boolean(
-                                                                                event.checked
+                                                                                    `${permission.method} ${permission.url}`
                                                                             )
-                                                                        )
-                                                                    }
-                                                                />
-                                                                {permissions.length >
-                                                                    1 && (
-                                                                    <span
-                                                                        className={
-                                                                            styles.permissionCount
-                                                                        }
-                                                                        title={
-                                                                            permissionUrls
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            selectedCount
-                                                                        }
-                                                                        /
-                                                                        {
-                                                                            permissions.length
-                                                                        }
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <label
-                                                                htmlFor={inputId}
-                                                                className={
-                                                                    styles.srOnly
+                                                                            .join(
+                                                                                '\n'
+                                                                            );
+
+                                                                    return (
+                                                                        <td
+                                                                            key={
+                                                                                operation.key
+                                                                            }
+                                                                            className={
+                                                                                styles.checkboxCell
+                                                                            }
+                                                                        >
+                                                                            <div
+                                                                                className={
+                                                                                    styles.permissionGroup
+                                                                                }
+                                                                            >
+                                                                                <Checkbox
+                                                                                    inputId={
+                                                                                        inputId
+                                                                                    }
+                                                                                    inputRef={(
+                                                                                        element
+                                                                                    ) => {
+                                                                                        if (
+                                                                                            element
+                                                                                        ) {
+                                                                                            element.indeterminate =
+                                                                                                selectedCount >
+                                                                                                    0 &&
+                                                                                                !allSelected;
+                                                                                        }
+                                                                                    }}
+                                                                                    checked={
+                                                                                        allSelected
+                                                                                    }
+                                                                                    disabled={
+                                                                                        disabled
+                                                                                    }
+                                                                                    aria-label={`${groupLabel}${permissions.length > 1 ? ` (${permissions.length} permisos)` : ''}`}
+                                                                                    onChange={(
+                                                                                        event
+                                                                                    ) =>
+                                                                                        onToggle(
+                                                                                            permissions.map(
+                                                                                                (
+                                                                                                    permission
+                                                                                                ) =>
+                                                                                                    permission.id
+                                                                                            ),
+                                                                                            Boolean(
+                                                                                                event.checked
+                                                                                            )
+                                                                                        )
+                                                                                    }
+                                                                                />
+                                                                                {permissions.length >
+                                                                                    1 && (
+                                                                                    <span
+                                                                                        className={
+                                                                                            styles.permissionCount
+                                                                                        }
+                                                                                        title={
+                                                                                            permissionUrls
+                                                                                        }
+                                                                                    >
+                                                                                        {
+                                                                                            selectedCount
+                                                                                        }
+                                                                                        /
+                                                                                        {
+                                                                                            permissions.length
+                                                                                        }
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            <label
+                                                                                htmlFor={
+                                                                                    inputId
+                                                                                }
+                                                                                className={
+                                                                                    styles.srOnly
+                                                                                }
+                                                                            >
+                                                                                {
+                                                                                    groupLabel
+                                                                                }
+                                                                            </label>
+                                                                        </td>
+                                                                    );
                                                                 }
-                                                            >
-                                                                {groupLabel}
-                                                            </label>
-                                                        </td>
+                                                            )}
+                                                        </tr>
                                                     );
-                                                })}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </AccordionTab>
-                    );
-                })}
-            </Accordion>
+                                                }
+                                            )}
+                                    </Fragment>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
-
