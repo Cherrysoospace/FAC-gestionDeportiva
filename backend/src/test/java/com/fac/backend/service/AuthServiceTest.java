@@ -10,6 +10,7 @@ import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.security.FirebaseIdentity;
 import com.fac.backend.security.FirebaseTokenVerifier;
+import com.fac.backend.security.OAuthCodeProviderStrategy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -55,6 +56,9 @@ class AuthServiceTest {
 
     @Mock
     private TwoFactorService twoFactorService;
+
+    @Mock
+    private OAuthCodeProviderStrategy oauthCodeProviderStrategy;
 
     @InjectMocks
     private AuthService authService;
@@ -312,6 +316,52 @@ class AuthServiceTest {
 
         assertEquals(ErrorCase.FORBIDDEN, exception.getErrorCase());
         verify(jwtService, never()).generateToken(user);
+    }
+
+    @Test
+    void discordLoginUsesStrategyResolvesUserAndIssuesSession() {
+        FirebaseIdentity identity = new FirebaseIdentity(
+                "discord",
+                "discord-123",
+                "fercho@example.com",
+                "Fercho",
+                null
+        );
+        User user = user(true);
+
+        when(oauthCodeProviderStrategy.authenticate(
+                "code-abc",
+                "http://localhost:3000/auth/discord/callback"
+        )).thenReturn(identity);
+        when(userService.resolverUsuario(
+                "discord",
+                "discord-123",
+                "fercho@example.com",
+                "Fercho",
+                null
+        )).thenReturn(user);
+
+        Instant expiresAt = Instant.now().plusSeconds(900);
+        AuthResponseDTO response = new AuthResponseDTO(
+                "jwt-token",
+                "Bearer",
+                expiresAt
+        );
+        when(jwtService.generateToken(user)).thenReturn(
+                new JwtService.IssuedToken(response, "jti-discord", expiresAt)
+        );
+
+        AuthResponseDTO result = authService.loginWithDiscord(
+                "code-abc",
+                "http://localhost:3000/auth/discord/callback"
+        );
+
+        assertSame(response, result);
+        verify(sessionService).registerAuthenticatedSession(
+                user,
+                "jti-discord",
+                expiresAt
+        );
     }
 
     private User user(boolean enabled) {

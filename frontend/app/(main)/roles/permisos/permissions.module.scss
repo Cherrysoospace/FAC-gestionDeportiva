@@ -1,37 +1,87 @@
 .matrixWrapper {
     overflow-x: auto;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
 }
 
 .matrixTable {
     width: 100%;
-    min-width: 38rem;
+    min-width: 40rem;
     border-collapse: collapse;
 
     th {
         position: sticky;
         top: 0;
         z-index: 1;
-        padding: 0.65rem 0.75rem;
-        background: var(--surface-card);
+        padding: 0.85rem 0.75rem;
+        background: var(--surface-ground);
         border-bottom: 1px solid var(--surface-border);
+        border-right: 1px solid var(--surface-border);
         color: var(--text-color-secondary);
-        font-size: 0.8125rem;
+        font-size: 0.85rem;
         font-weight: 600;
         text-align: center;
         white-space: nowrap;
+
+        &:first-child {
+            text-align: left;
+            padding-left: 1rem;
+        }
+
+        &:last-child {
+            border-right: 0;
+        }
     }
 
     td {
-        padding: 0.65rem 0.75rem;
+        padding: 0.7rem 0.75rem;
         border-bottom: 1px solid var(--surface-border);
+        border-right: 1px solid var(--surface-border);
         font-size: 0.875rem;
+
+        &:last-child {
+            border-right: 0;
+        }
     }
 
     tbody tr:last-child td {
         border-bottom: 0;
     }
+}
 
-    tbody tr:hover td {
+.moduleGroupRow {
+    background: var(--surface-hover);
+
+    td {
+        padding: 0.6rem 1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        border-right: 0;
+    }
+}
+
+.moduleToggleBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+        opacity: 0.85;
+    }
+}
+
+.resourceRow {
+    transition: background-color 120ms ease;
+
+    &:hover td {
         background: var(--surface-hover);
     }
 }
@@ -39,18 +89,19 @@
 .resourceName {
     color: var(--text-color);
     font-weight: 500;
+    padding-left: 1.5rem !important;
 }
 
 .checkboxCell {
     text-align: center;
-    width: 7rem;
+    width: 6.5rem;
 }
 
 .permissionGroup {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
+    gap: 0.35rem;
 }
 
 .permissionCount {
@@ -60,21 +111,48 @@
     white-space: nowrap;
 }
 
-.legendAssigned,
-.legendUnassigned {
-    width: 0.625rem;
-    height: 0.625rem;
-    border-radius: 50%;
-    flex-shrink: 0;
+.summaryRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--surface-border);
+
+    &:last-child {
+        border-bottom: 0;
+    }
 }
 
-.legendAssigned {
-    background: var(--primary-color);
+.kpiGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
 }
 
-.legendUnassigned {
-    background: transparent;
+.kpiBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.85rem 0.5rem;
     border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    background: var(--surface-ground);
+    gap: 0.35rem;
+}
+
+.kpiValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.infoBox {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--border-radius);
+    padding: 0.85rem 1rem;
+    background: var(--surface-ground);
 }
 
 .srOnly {
@@ -95,8 +173,4 @@
 
 .matrixAreaBusy {
     opacity: 0.6;
-}
-
-.coverageBar {
-    height: 0.5rem;
 }

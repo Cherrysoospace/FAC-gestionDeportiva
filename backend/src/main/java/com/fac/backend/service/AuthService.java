@@ -13,9 +13,9 @@ import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.mapper.RoleMapper;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.security.AuthProviders;
-import com.fac.backend.security.DiscordOAuthClient;
 import com.fac.backend.security.FirebaseIdentity;
 import com.fac.backend.security.FirebaseTokenVerifier;
+import com.fac.backend.security.OAuthCodeProviderStrategy;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,7 +32,7 @@ public class AuthService {
     private final SessionService sessionService;
     private final UserService userService;
     private final FirebaseTokenVerifier firebaseTokenVerifier;
-    private final DiscordOAuthClient discordOAuthClient;
+    private final OAuthCodeProviderStrategy oauthCodeProviderStrategy;
     private final EffectivePermissionService effectivePermissionService;
     private final PermissionCatalogService permissionCatalogService;
     private final RoleMapper roleMapper;
@@ -124,7 +124,7 @@ public class AuthService {
     @Transactional
     public AuthResponseDTO loginWithDiscord(String code, String redirectUri) {
         FirebaseIdentity identity =
-                discordOAuthClient.authenticate(code, redirectUri);
+                oauthCodeProviderStrategy.authenticate(code, redirectUri);
 
         User user = userService.resolverUsuario(
                 identity.provider(),

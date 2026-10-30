@@ -114,3 +114,32 @@ export interface UserRoleAssignment {
 export interface UserWithRoles extends UserSummary {
     roles: UserRoleAssignment[];
 }
+
+export interface RoleFormValues {
+    name: string;
+    description: string;
+    active: boolean;
+}
+
+export interface RoleUserItem {
+    id: number;
+    roleId: number;
+    user: UserAccount;
+}
+
+export interface PermissionFormValues {
+    url: string;
+    method: string;
+}
+
+export interface PermissionRecord {
+    id: number;
+    url: string;
+    method: string;
+}
+
+export interface PermissionRoleAssignment {
+    id: number;
+    permissionId: number;
+    role: RoleSummary;
+}
