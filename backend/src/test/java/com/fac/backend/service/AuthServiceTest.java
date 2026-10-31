@@ -58,6 +58,7 @@ class AuthServiceTest {
     private TwoFactorService twoFactorService;
 
     @Mock
+    
     private OAuthCodeProviderStrategy oauthCodeProviderStrategy;
 
     @InjectMocks
