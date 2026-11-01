@@ -149,6 +149,41 @@ class FirebaseTokenVerifierTest {
     }
 
     @Test
+    void rejectsFirebasePasswordProvider() throws Exception {
+        JWTClaimsSet.Builder claims = validClaims()
+                .claim("firebase", Map.of("sign_in_provider", "password"));
+
+        assertUnauthorized(token(claims, keyPair));
+    }
+
+    @Test
+    void rejectsAnonymousProvider() throws Exception {
+        JWTClaimsSet.Builder claims = validClaims()
+                .claim("firebase", Map.of("sign_in_provider", "anonymous"));
+
+        assertUnauthorized(token(claims, keyPair));
+    }
+
+    @Test
+    void rejectsGoogleTokenWithUnverifiedEmail() throws Exception {
+        JWTClaimsSet.Builder claims = validClaims()
+                .claim("email_verified", false);
+
+        assertUnauthorized(token(claims, keyPair));
+    }
+
+    @Test
+    void acceptsGithubTokenWithoutVerifiedEmail() throws Exception {
+        JWTClaimsSet.Builder claims = validClaims()
+                .claim("email_verified", false)
+                .claim("firebase", Map.of("sign_in_provider", "github.com"));
+
+        FirebaseIdentity identity = verifier.verify(token(claims, keyPair));
+
+        assertEquals("github.com", identity.provider());
+    }
+
+    @Test
     void failsClearlyWhenProjectIdIsMissing() {
         FirebaseTokenVerifier unconfigured =
                 new FirebaseTokenVerifier("", "http://127.0.0.1/jwks");
@@ -178,6 +213,7 @@ class FirebaseTokenVerifierTest {
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(now.plusSeconds(3600)))
                 .claim("email", "user@example.com")
+                .claim("email_verified", true)
                 .claim("name", "Test User")
                 .claim("picture", "https://example.com/photo.png")
                 .claim("firebase", Map.of(

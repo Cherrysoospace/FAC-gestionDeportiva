@@ -10,6 +10,7 @@ import com.fac.backend.repository.RolePermissionRepository;
 import com.fac.backend.repository.RoleRepository;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.repository.UserRoleRepository;
+import com.fac.backend.service.PermissionCatalogService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -134,6 +135,7 @@ public class DatabaseSeeder {
     private final UserRoleRepository userRoleRepository;
     private final RolePermissionRepository rolePermissionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PermissionCatalogService permissionCatalogService;
 
     @Value("${app.seed.admin-password:Admin123!}")
     private String adminPassword;
@@ -198,7 +200,39 @@ public class DatabaseSeeder {
             assignPermissionsInBatch(adminRole, ADMIN_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(coordinatorRole, COORDINATOR_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(consultantRole, CONSULTANT_PERMISSIONS, permissionsByKey);
+
+            completeModuleAndResource(permissionRepository.findAll());
         };
+    }
+
+    /**
+     * HU-SE-05: los permisos anteriores a las columnas module y resource
+     * (y los de esta semilla) quedan en NULL. Se completan con lo que se
+     * deduce de la URL; un valor ya escrito nunca se reemplaza.
+     */
+    private void completeModuleAndResource(List<Permission> permissions) {
+        List<Permission> incomplete = permissions.stream()
+                .filter(p -> isBlank(p.getModule()) || isBlank(p.getResource()))
+                .toList();
+
+        incomplete.forEach(permission -> {
+            PermissionCatalogService.ResourceDescriptor derived =
+                    permissionCatalogService.resolveResource(permission.getUrl());
+            if (isBlank(permission.getModule())) {
+                permission.setModule(derived.module());
+            }
+            if (isBlank(permission.getResource())) {
+                permission.setResource(derived.resource());
+            }
+        });
+
+        if (!incomplete.isEmpty()) {
+            permissionRepository.saveAll(incomplete);
+        }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private void assignPermissionsInBatch(

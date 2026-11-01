@@ -14,19 +14,25 @@ public class PermissionMapper {
         return Permission.builder()
                 .url(dto.getUrl())
                 .method(dto.getMethod().toUpperCase())
+                .module(dto.getModule())
+                .resource(dto.getResource())
                 .build();
     }
 
     public void updateEntity(PermissionRequestDTO dto, Permission permission) {
         permission.setUrl(dto.getUrl());
         permission.setMethod(dto.getMethod().toUpperCase());
+        permission.setModule(dto.getModule());
+        permission.setResource(dto.getResource());
     }
 
     public PermissionResponseDTO toResponseDTO(Permission permission) {
         return new PermissionResponseDTO(
                 permission.getId(),
                 permission.getUrl(),
-                permission.getMethod()
+                permission.getMethod(),
+                permission.getModule(),
+                permission.getResource()
         );
     }
 

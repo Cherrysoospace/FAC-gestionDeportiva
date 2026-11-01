@@ -1,6 +1,7 @@
 package com.fac.backend.service;
 
 import java.util.List;
+import java.util.Locale;
 
 import com.fac.backend.authorization.PermissionMatcher;
 import com.fac.backend.config.CacheConfig;
@@ -35,8 +36,9 @@ public class PermissionService {
             allEntries = true
     )
     public PermissionResponseDTO create(PermissionRequestDTO dto) {
+        normalize(dto);
         if (permissionRepository.existsByUrlAndMethod(
-                dto.getUrl(), dto.getMethod().toUpperCase())) {
+                dto.getUrl(), dto.getMethod())) {
             throw new ApplicationException(ErrorCase.ALREADY_EXISTS,
                     "Ya existe un permiso con esa url y método");
         }
@@ -68,8 +70,9 @@ public class PermissionService {
     )
     public PermissionResponseDTO update(Long id, PermissionRequestDTO dto) {
         Permission permission = findPermission(id);
+        normalize(dto);
         if (permissionRepository.existsByUrlAndMethodAndIdNot(
-                dto.getUrl(), dto.getMethod().toUpperCase(), id)) {
+                dto.getUrl(), dto.getMethod(), id)) {
             throw new ApplicationException(ErrorCase.ALREADY_EXISTS,
                     "Ya existe un permiso con esa url y método");
         }
@@ -103,6 +106,25 @@ public class PermissionService {
                         httpMethod,
                         requestUrl
                 ));
+    }
+
+    /**
+     * HU-SE-05: deja la URL en la misma forma que usa el PermissionMatcher
+     * (/api/users/1, /api/users/{id} y /api/users/{id}/ son el mismo permiso)
+     * y completa el módulo y el recurso que no se indicaron.
+     */
+    private void normalize(PermissionRequestDTO dto) {
+        dto.setUrl(PermissionMatcher.normalizeUrl(dto.getUrl().trim()));
+        dto.setMethod(dto.getMethod().trim().toUpperCase(Locale.ROOT));
+
+        PermissionCatalogService.ResourceDescriptor derived =
+                permissionCatalogService.resolveResource(dto.getUrl());
+        dto.setModule(valueOrDefault(dto.getModule(), derived.module()));
+        dto.setResource(valueOrDefault(dto.getResource(), derived.resource()));
+    }
+
+    private String valueOrDefault(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value.trim();
     }
 
     private Permission findPermission(Long id) {

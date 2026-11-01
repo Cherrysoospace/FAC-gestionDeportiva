@@ -7,4 +7,6 @@ public class PermissionResponseDTO {
     Long id;
     String url;
     String method;
+    String module;
+    String resource;
 }

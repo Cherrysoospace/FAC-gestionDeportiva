@@ -56,6 +56,14 @@ public class Permission {
     )
     private String method;
 
+    // HU-SE-05: módulo y recurso sobre los que aplica. Pueden quedar vacíos en
+    // permisos antiguos; en ese caso el catálogo los deduce de la URL.
+    @Column(name = "module", length = 80)
+    private String module;
+
+    @Column(name = "resource", length = 80)
+    private String resource;
+
     @OneToMany(mappedBy = "permission", fetch = FetchType.LAZY)
     @Builder.Default
     private List<RolePermission> rolePermissions = new ArrayList<>();

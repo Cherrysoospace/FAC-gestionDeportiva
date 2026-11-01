@@ -10,11 +10,13 @@ import com.fac.backend.entity.Role;
 import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.mapper.RoleMapper;
+import com.fac.backend.repository.RolePermissionRepository;
 import com.fac.backend.repository.RoleRepository;
 import com.fac.backend.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class RoleService {
 
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final RolePermissionRepository rolePermissionRepository;
 
     private final RoleMapper roleMapper;
 
@@ -74,6 +77,7 @@ public class RoleService {
             cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
             allEntries = true
     )
+    @Transactional
     public void delete(Long id) {
         Role role = findEntityById(id);
         if (userRoleRepository.existsByRoleId(id)) {
@@ -82,6 +86,10 @@ public class RoleService {
                     "No se puede eliminar un rol que estÃ¡ asignado"
             );
         }
+        // Solo se retiran las asociaciones: los permisos siguen en el sistema (HU-SE-03)
+        rolePermissionRepository.deleteAll(
+                rolePermissionRepository.findAllByRoleId(id)
+        );
         roleRepository.delete(role);
     }
 

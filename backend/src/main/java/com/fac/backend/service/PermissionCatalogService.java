@@ -90,7 +90,8 @@ public class PermissionCatalogService {
     }
 
     public PermissionItemDTO toItem(Permission permission) {
-        ResourceDescriptor descriptor = resolveResource(permission.getUrl());
+        // Lo guardado en el permiso manda; la URL solo cubre permisos antiguos
+        ResourceDescriptor derived = resolveResource(permission.getUrl());
         PermissionOperation operation = resolveOperation(
                 permission.getMethod(),
                 permission.getUrl()
@@ -100,8 +101,8 @@ public class PermissionCatalogService {
                 permission.getId(),
                 permission.getUrl(),
                 permission.getMethod().toUpperCase(Locale.ROOT),
-                descriptor.module(),
-                descriptor.resource(),
+                storedOrDerived(permission.getModule(), derived.module()),
+                storedOrDerived(permission.getResource(), derived.resource()),
                 operation,
                 operation.getLabel()
         );
@@ -199,6 +200,10 @@ public class PermissionCatalogService {
                 .toList();
 
         return new PermissionModuleDTO(moduleName, resources);
+    }
+
+    private String storedOrDerived(String stored, String derived) {
+        return stored == null || stored.isBlank() ? derived : stored;
     }
 
     private boolean hasIdentifier(String url) {

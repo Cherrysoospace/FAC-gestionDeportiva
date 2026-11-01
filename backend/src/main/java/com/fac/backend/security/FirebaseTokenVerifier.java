@@ -19,12 +19,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class FirebaseTokenVerifier {
 
     static final String GOOGLE_JWKS_URI =
             "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+
+    static final Set<String> ALLOWED_PROVIDERS = Set.of("google.com", "github.com");
+
+    static final Set<String> PROVIDERS_REQUIRING_VERIFIED_EMAIL = Set.of("google.com");
 
     private final String projectId;
     private final String jwkSetUri;
@@ -47,7 +52,9 @@ public class FirebaseTokenVerifier {
         String provider = stringClaim(firebase, "sign_in_provider");
         String uid = jwt.getSubject();
 
-        if (provider == null || provider.isBlank()
+        // Firebase también firma tokens de correo/contraseña, anónimos o por
+        // teléfono: solo se aceptan los proveedores OAuth del anexo (HU-SE-08)
+        if (provider == null || !ALLOWED_PROVIDERS.contains(provider)
                 || uid == null || uid.isBlank()) {
             throw unauthorized();
         }
@@ -57,6 +64,16 @@ public class FirebaseTokenVerifier {
             throw new ApplicationException(
                     ErrorCase.INVALID_OPERATION,
                     "El proveedor no entregó un correo"
+            );
+        }
+
+        // GitHub suele llegar con email_verified=false aunque el correo sea
+        // legítimo, por eso la verificación solo se exige donde es confiable
+        if (PROVIDERS_REQUIRING_VERIFIED_EMAIL.contains(provider)
+                && !Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified"))) {
+            throw new ApplicationException(
+                    ErrorCase.UNAUTHORIZED,
+                    "El correo de la cuenta no está verificado por el proveedor"
             );
         }
 
