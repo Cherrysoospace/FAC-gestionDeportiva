@@ -153,7 +153,9 @@ function PermissionsContent() {
         useState<PermissionOperation | null>(null);
     const [formValues, setFormValues] = useState<PermissionFormValues>({
         method: 'GET',
-        url: '/api/'
+        url: '/api/',
+        module: '',
+        resource: ''
     });
     const [formSubmitted, setFormSubmitted] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
@@ -253,7 +255,7 @@ function PermissionsContent() {
         setEditingPermission(null);
         setQuickResourceBase('/api/torneos');
         setQuickOperation('LISTAR');
-        setFormValues({ method: 'GET', url: '/api/torneos' });
+        setFormValues({ method: 'GET', url: '/api/torneos', module: '', resource: '' });
         setFormSubmitted(false);
         setFormError(null);
         setDialogVisible(true);
@@ -263,7 +265,12 @@ function PermissionsContent() {
         setEditingPermission(item);
         setQuickResourceBase('');
         setQuickOperation(item.operation);
-        setFormValues({ method: item.method, url: item.url });
+        setFormValues({
+            method: item.method,
+            url: item.url,
+            module: item.module,
+            resource: item.resource
+        });
         setFormSubmitted(false);
         setFormError(null);
         setDialogVisible(true);
@@ -278,10 +285,11 @@ function PermissionsContent() {
             (op) => op.value === operation
         );
         if (!opDescriptor) return;
-        setFormValues({
+        setFormValues((prev) => ({
+            ...prev,
             method: opDescriptor.method,
             url: opDescriptor.withId ? `${base}/{id}` : base
-        });
+        }));
     };
 
     const handleFormSave = async (event: React.FormEvent) => {
@@ -300,7 +308,9 @@ function PermissionsContent() {
         try {
             const payload: PermissionFormValues = {
                 url: trimmedUrl,
-                method: trimmedMethod
+                method: trimmedMethod,
+                module: formValues.module.trim(),
+                resource: formValues.resource.trim()
             };
 
             if (editingPermission) {
@@ -943,6 +953,50 @@ function PermissionsContent() {
                                         Ingresa una URL válida que inicie con /
                                     </small>
                                 )}
+                        </div>
+
+                        <div className="col-12 sm:col-6 flex flex-column gap-2">
+                            <label
+                                htmlFor="permission-module"
+                                className="text-900 font-medium text-sm"
+                            >
+                                Módulo
+                            </label>
+                            <InputText
+                                id="permission-module"
+                                value={formValues.module}
+                                maxLength={80}
+                                placeholder="Se deduce de la URL"
+                                className="w-full"
+                                onChange={(event) =>
+                                    setFormValues((prev) => ({
+                                        ...prev,
+                                        module: event.target.value
+                                    }))
+                                }
+                            />
+                        </div>
+
+                        <div className="col-12 sm:col-6 flex flex-column gap-2">
+                            <label
+                                htmlFor="permission-resource"
+                                className="text-900 font-medium text-sm"
+                            >
+                                Recurso
+                            </label>
+                            <InputText
+                                id="permission-resource"
+                                value={formValues.resource}
+                                maxLength={80}
+                                placeholder="Se deduce de la URL"
+                                className="w-full"
+                                onChange={(event) =>
+                                    setFormValues((prev) => ({
+                                        ...prev,
+                                        resource: event.target.value
+                                    }))
+                                }
+                            />
                         </div>
                     </div>
 

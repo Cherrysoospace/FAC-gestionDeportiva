@@ -130,12 +130,17 @@ export interface RoleUserItem {
 export interface PermissionFormValues {
     url: string;
     method: string;
+    // Vacíos: el backend los deduce de la URL
+    module: string;
+    resource: string;
 }
 
 export interface PermissionRecord {
     id: number;
     url: string;
     method: string;
+    module: string | null;
+    resource: string | null;
 }
 
 export interface PermissionRoleAssignment {

@@ -13,6 +13,24 @@ const PROVIDER_NAMES: Record<SocialProvider, string> = {
     discord: 'Discord'
 };
 
+// Firebase permite una sola cuenta por correo: si ya entró con otro proveedor,
+// bloquea este antes de llegar al backend (HU-SE-08, sin usuarios duplicados)
+function describeFirebaseError(cause: unknown, providerName: string): string | null {
+    const code = typeof cause === 'object' && cause !== null && 'code' in cause ? String(cause.code) : '';
+
+    switch (code) {
+        case 'auth/account-exists-with-different-credential':
+            return 'Ese correo ya está registrado con otro método de acceso. Inicia sesión con el que usaste la primera vez.';
+        case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
+            return null;
+        case 'auth/popup-blocked':
+            return 'El navegador bloqueó la ventana de inicio de sesión. Permite las ventanas emergentes e inténtalo de nuevo.';
+        default:
+            return `No se pudo continuar con ${providerName}`;
+    }
+}
+
 /**
  * Inicio de sesión con proveedores externos. También sirve para registrarse:
  * el backend crea la cuenta si no existe.
@@ -34,7 +52,13 @@ export function useSocialLogin(nextPath: string, onError: (message: string | nul
         try {
             await (provider === 'google' ? loginWithGoogle(nextPath) : loginWithGithub(nextPath));
         } catch (cause) {
-            onError(cause instanceof ApiRequestError ? cause.message : `No se pudo continuar con ${PROVIDER_NAMES[provider]}`);
+            if (cause instanceof ApiRequestError) {
+                onError(cause.message);
+            } else {
+                // Los errores de Firebase (popup, cuenta duplicada...) no traen mensaje del backend
+                console.error(`[login ${provider}]`, cause);
+                onError(describeFirebaseError(cause, PROVIDER_NAMES[provider]));
+            }
         } finally {
             setLoadingProvider(null);
         }
