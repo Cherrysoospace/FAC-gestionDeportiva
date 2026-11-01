@@ -22,6 +22,11 @@ function loginErrorMessage(cause: unknown): string {
         if (cause.status === 403) return 'Tu usuario está deshabilitado';
         // El backend indica si la cuenta usa Google, GitHub o Discord
         if (cause.status === 401) return cause.message;
+        // Datos inválidos (ej. correo mal escrito): el backend explica qué falta
+        if (cause.status === 400) return cause.message;
+        // Un fallo del servidor no es culpa de la contraseña: no se disfraza de
+        // "credenciales incorrectas" para no esconder errores como el del 2FA
+        if (cause.status >= 500) return 'Ocurrió un error en el servidor. Inténtalo de nuevo en unos minutos.';
     }
     return 'Credenciales incorrectas';
 }
