@@ -9,6 +9,7 @@ import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.service.AuthService;
 import com.fac.backend.service.JwtService;
+import com.fac.backend.service.OAuthLoginService;
 import com.fac.backend.service.SessionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,11 +49,14 @@ class AuthControllerIntegrationTest {
     @MockitoBean
     private AuthService authService;
 
+    @MockitoBean
+    private OAuthLoginService oauthLoginService;
+
     @Test
     void oauthEndpointIsPublic() throws Exception {
         AuthResponseDTO response = response();
 
-        when(authService.loginWithFirebase("valid-token"))
+        when(oauthLoginService.loginWithIdToken("valid-token"))
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/auth/oauth/firebase")
@@ -64,7 +68,7 @@ class AuthControllerIntegrationTest {
 
     @Test
     void oauthEndpointReturns401ForInvalidToken() throws Exception {
-        when(authService.loginWithFirebase("invalid-token"))
+        when(oauthLoginService.loginWithIdToken("invalid-token"))
                 .thenThrow(new ApplicationException(
                         ErrorCase.UNAUTHORIZED,
                         "Token de Firebase inválido o expirado"
@@ -79,7 +83,7 @@ class AuthControllerIntegrationTest {
 
     @Test
     void oauthEndpointReturns403ForDisabledUser() throws Exception {
-        when(authService.loginWithFirebase("disabled-token"))
+        when(oauthLoginService.loginWithIdToken("disabled-token"))
                 .thenThrow(new ApplicationException(
                         ErrorCase.FORBIDDEN,
                         "Tu usuario está deshabilitado"
@@ -94,7 +98,7 @@ class AuthControllerIntegrationTest {
 
     @Test
     void oauthEndpointReturns409ForEmailConflict() throws Exception {
-        when(authService.loginWithFirebase("conflict-token"))
+        when(oauthLoginService.loginWithIdToken("conflict-token"))
                 .thenThrow(new ApplicationException(
                         ErrorCase.ALREADY_EXISTS,
                         "Ese correo ya está registrado con otro método de acceso"
@@ -109,7 +113,7 @@ class AuthControllerIntegrationTest {
 
     @Test
     void oauthEndpointReturns400WhenProviderHasNoEmail() throws Exception {
-        when(authService.loginWithFirebase("no-email-token"))
+        when(oauthLoginService.loginWithIdToken("no-email-token"))
                 .thenThrow(new ApplicationException(
                         ErrorCase.INVALID_OPERATION,
                         "El proveedor no entregó un correo"

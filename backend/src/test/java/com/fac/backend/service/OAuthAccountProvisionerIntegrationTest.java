@@ -6,6 +6,7 @@ import com.fac.backend.entity.UserRole;
 import com.fac.backend.repository.RoleRepository;
 import com.fac.backend.repository.UserRepository;
 import com.fac.backend.repository.UserRoleRepository;
+import com.fac.backend.security.ExternalIdentity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-class UserServiceOAuthIntegrationTest {
+class OAuthAccountProvisionerIntegrationTest {
 
     @Autowired
-    private UserService userService;
+    private OAuthAccountProvisioner provisioner;
 
     @Autowired
     private UserRepository userRepository;
@@ -40,13 +41,13 @@ class UserServiceOAuthIntegrationTest {
         String uid = "uid-" + suffix;
         String email = "oauth-" + suffix + "@example.com";
 
-        User created = userService.resolverUsuario(
+        User created = provisioner.resolve(new ExternalIdentity(
                 provider,
                 uid,
                 email,
                 null,
                 null
-        );
+        ));
 
         assertNotNull(created.getId());
 

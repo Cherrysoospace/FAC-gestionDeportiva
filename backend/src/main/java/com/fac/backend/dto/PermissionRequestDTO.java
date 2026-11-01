@@ -13,8 +13,8 @@ public class PermissionRequestDTO {
     @Size(max = 255, message = "La url no puede superar 255 caracteres")
     private String url;
 
-    @NotBlank(message = "El mÃ©todo es obligatorio")
-    @Size(max = 10, message = "El mÃ©todo no puede superar 10 caracteres")
+    @NotBlank(message = "El método es obligatorio")
+    @Size(max = 10, message = "El método no puede superar 10 caracteres")
     private String method;
 
     // Opcionales: si llegan vacíos se deducen de la URL

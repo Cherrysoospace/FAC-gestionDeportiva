@@ -19,10 +19,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -60,8 +60,31 @@ class RolePermissionServiceTest {
     @Mock
     private AuditService auditService;
 
-    @InjectMocks
     private RolePermissionService rolePermissionService;
+
+    private RoleSummaryService roleSummaryService;
+
+    @BeforeEach
+    void setUp() {
+        // La regla de acceso es real: se prueba junto con la sincronización
+        ManagementAccessGuard guard =
+                new ManagementAccessGuard(permissionRepository, userRoleRepository);
+        rolePermissionService = new RolePermissionService(
+                roleRepository,
+                permissionRepository,
+                rolePermissionRepository,
+                rolePermissionMapper,
+                permissionCatalogService,
+                auditService,
+                guard
+        );
+        roleSummaryService = new RoleSummaryService(
+                roleRepository,
+                permissionRepository,
+                userRoleRepository,
+                permissionCatalogService
+        );
+    }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -279,7 +302,7 @@ class RolePermissionServiceTest {
         when(permissionRepository.count()).thenReturn(5L);
         when(userRoleRepository.countByRoleId(1L)).thenReturn(3L);
 
-        RoleSummaryResponseDTO summary = rolePermissionService
+        RoleSummaryResponseDTO summary = roleSummaryService
                 .findRoleSummary(1L);
 
         assertEquals(3L, summary.getUsersCount());

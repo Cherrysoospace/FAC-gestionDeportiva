@@ -31,15 +31,15 @@ class PermissionServiceTest {
     @Mock
     private RolePermissionRepository rolePermissionRepository;
 
-    @Mock
-    private EffectivePermissionService effectivePermissionService;
+    @Spy
+    private PermissionClassifier permissionClassifier = new PermissionClassifier();
 
     @Spy
     private PermissionMapper permissionMapper = new PermissionMapper();
 
     @Spy
     private PermissionCatalogService permissionCatalogService =
-            new PermissionCatalogService();
+            new PermissionCatalogService(new PermissionClassifier());
 
     @InjectMocks
     private PermissionService permissionService;

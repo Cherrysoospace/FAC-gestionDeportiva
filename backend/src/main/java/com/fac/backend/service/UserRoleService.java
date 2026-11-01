@@ -25,6 +25,9 @@ import java.util.List;
 @Transactional
 public class UserRoleService {
 
+    /** Rol que recibe toda cuenta nueva creada por registro u OAuth. */
+    static final String DEFAULT_ROLE = "AFICIONADO";
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
@@ -80,6 +83,28 @@ public class UserRoleService {
     )
     public void delete(Long userId, Long roleId) {
         userRoleRepository.delete(findAssignment(userId, roleId));
+    }
+
+    /** Cuentas OAuth: el rol por defecto es obligatorio para poder usar la plataforma. */
+    public void assignDefaultRole(User user) {
+        Role role = roleRepository.findByNameIgnoreCase(DEFAULT_ROLE)
+                .orElseThrow(() -> new IllegalStateException(
+                        "El rol " + DEFAULT_ROLE + " no está configurado"
+                ));
+        link(user, role);
+    }
+
+    /** Registro público: si el rol aún no existe, la cuenta se crea sin roles. */
+    public void assignDefaultRoleIfPresent(User user) {
+        roleRepository.findByNameIgnoreCase(DEFAULT_ROLE)
+                .ifPresent(role -> link(user, role));
+    }
+
+    private void link(User user, Role role) {
+        UserRole userRole = new UserRole();
+        userRole.setUser(user);
+        userRole.setRole(role);
+        userRoleRepository.save(userRole);
     }
 
     private UserRole findAssignment(Long userId, Long roleId) {

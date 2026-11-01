@@ -55,7 +55,7 @@ public class DiscordOAuthClient implements OAuthCodeProviderStrategy {
 
     @Override
     @SuppressWarnings("unchecked")
-    public FirebaseIdentity authenticate(String code, String redirectUri) {
+    public ExternalIdentity authenticate(String code, String redirectUri) {
         if (clientId.isBlank() || clientSecret.isBlank()) {
             throw new ApplicationException(
                     ErrorCase.UNAUTHORIZED,
@@ -113,7 +113,7 @@ public class DiscordOAuthClient implements OAuthCodeProviderStrategy {
                     : "https://cdn.discordapp.com/avatars/" + id + "/"
                             + user.get("avatar") + ".png";
 
-            return new FirebaseIdentity(PROVIDER_ID, id, email, name, avatar);
+            return new ExternalIdentity(PROVIDER_ID, id, email, name, avatar);
         } catch (ApplicationException ex) {
             throw ex;
         } catch (Exception ex) {

@@ -1,14 +1,11 @@
 package com.fac.backend.service;
 
-import com.fac.backend.authorization.PermissionMatcher;
-import com.fac.backend.authorization.SecurityPermissions;
 import com.fac.backend.config.CacheConfig;
 import com.fac.backend.dto.AssignPermissionRequestDTO;
 import com.fac.backend.dto.PermissionRoleResponseDTO;
 import com.fac.backend.dto.RolePermissionResponseDTO;
 import com.fac.backend.dto.permission.PermissionItemDTO;
 import com.fac.backend.dto.permission.RolePermissionsAssignmentDTO;
-import com.fac.backend.dto.permission.RoleSummaryResponseDTO;
 import com.fac.backend.dto.permission.UpdateRolePermissionsRequestDTO;
 import com.fac.backend.entity.Permission;
 import com.fac.backend.entity.Role;
@@ -19,7 +16,6 @@ import com.fac.backend.mapper.RolePermissionMapper;
 import com.fac.backend.repository.PermissionRepository;
 import com.fac.backend.repository.RolePermissionRepository;
 import com.fac.backend.repository.RoleRepository;
-import com.fac.backend.repository.UserRoleRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -33,6 +29,11 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * HU-SE-06: asignación de permisos a roles, uno a uno o con la matriz completa.
+ * La regla de "no dejar el sistema sin administrador" vive en
+ * {@link ManagementAccessGuard} y el resumen del rol en {@link RoleSummaryService}.
+ */
 @Service
 @RequiredArgsConstructor
 public class RolePermissionService {
@@ -40,10 +41,10 @@ public class RolePermissionService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final RolePermissionRepository rolePermissionRepository;
-    private final UserRoleRepository userRoleRepository;
     private final RolePermissionMapper rolePermissionMapper;
     private final PermissionCatalogService permissionCatalogService;
     private final AuditService auditService;
+    private final ManagementAccessGuard managementAccessGuard;
 
     @CacheEvict(
             cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
@@ -108,33 +109,6 @@ public class RolePermissionService {
         return buildAssignment(role, permissions);
     }
 
-    @Transactional(readOnly = true)
-    public RoleSummaryResponseDTO findRoleSummary(Long roleId) {
-        Role role = findRoleWithPermissions(roleId);
-        List<Permission> permissions = distinctPermissions(role);
-        List<PermissionItemDTO> items = permissionCatalogService.toItems(permissions);
-
-        List<String> modules = items.stream()
-                .map(PermissionItemDTO::getModule)
-                .distinct()
-                .toList();
-
-        int totalAvailable = Math.toIntExact(permissionRepository.count());
-        int assignedCount = permissions.size();
-
-        return new RoleSummaryResponseDTO(
-                role.getId(),
-                role.getName(),
-                role.getDescription(),
-                role.isActive(),
-                userRoleRepository.countByRoleId(roleId),
-                assignedCount,
-                modules,
-                totalAvailable,
-                Math.max(totalAvailable - assignedCount, 0)
-        );
-    }
-
     @CacheEvict(
             cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
             allEntries = true
@@ -193,7 +167,7 @@ public class RolePermissionService {
                                 Function.identity()
                         ));
 
-        assertManagementAccessRemains(role, targetIds);
+        managementAccessGuard.assertAccessRemains(role, targetIds);
 
         List<RolePermission> removals = currentAssignments.values().stream()
                 .filter(assignment -> !targetIds.contains(
@@ -272,61 +246,5 @@ public class RolePermissionService {
                 .map(RolePermission::getPermission)
                 .distinct()
                 .toList();
-    }
-
-    private void assertManagementAccessRemains(
-            Role role,
-            Set<Long> targetIds) {
-
-        Long roleId = role.getId();
-        List<Permission> managementPermissions = permissionRepository
-                .findAll()
-                .stream()
-                .filter(permission -> SecurityPermissions.MANAGEMENT_KEYS.contains(
-                        PermissionMatcher.key(permission)))
-                .toList();
-
-        if (managementPermissions.isEmpty()) {
-            return;
-        }
-
-        Set<String> keys = managementPermissions.stream()
-                .map(PermissionMatcher::key)
-                .collect(Collectors.toSet());
-
-        if (userRoleRepository
-                .findUserIdsWithAllPermissions(keys, keys.size())
-                .isEmpty()) {
-            // Ya no existe un usuario con acceso completo: no hay bloqueo
-            // adicional que evitar en esta operación.
-            return;
-        }
-
-        boolean roleRetainsAll = managementPermissions.stream()
-                .allMatch(permission -> targetIds.contains(permission.getId()));
-
-        if (roleRetainsAll
-                && role.isActive()
-                && userRoleRepository.existsEnabledUserByRoleId(roleId)) {
-            return;
-        }
-
-        boolean anotherUserRetainsAccess = !userRoleRepository
-                .findUserIdsWithAllPermissionsExcludingRole(
-                        roleId,
-                        keys,
-                        keys.size()
-                )
-                .isEmpty();
-
-        if (anotherUserRetainsAccess) {
-            return;
-        }
-
-        throw new ApplicationException(
-                ErrorCase.INVALID_OPERATION,
-                "No se puede retirar ese permiso: el sistema quedaría sin "
-                        + "ningún usuario con acceso a la gestión de roles y permisos"
-        );
     }
 }

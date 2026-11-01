@@ -83,7 +83,7 @@ public class RoleService {
         if (userRoleRepository.existsByRoleId(id)) {
             throw new ApplicationException(
                     ErrorCase.INVALID_OPERATION,
-                    "No se puede eliminar un rol que estÃ¡ asignado"
+                    "No se puede eliminar un rol que está asignado"
             );
         }
         // Solo se retiran las asociaciones: los permisos siguen en el sistema (HU-SE-03)
@@ -99,4 +99,4 @@ public class RoleService {
                     ErrorCase.NOT_FOUND, "Rol no encontrado"
                 ));
     }
-}
+}

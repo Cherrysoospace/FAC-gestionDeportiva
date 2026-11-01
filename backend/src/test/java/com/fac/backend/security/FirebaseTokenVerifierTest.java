@@ -23,6 +23,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,7 +86,7 @@ class FirebaseTokenVerifierTest {
 
     @Test
     void verifiesValidGoogleToken() throws Exception {
-        FirebaseIdentity identity = verifier.verify(
+        ExternalIdentity identity = verifier.verify(
                 token(validClaims(), keyPair)
         );
 
@@ -125,6 +126,25 @@ class FirebaseTokenVerifierTest {
     @Test
     void rejectsInvalidSignature() throws Exception {
         assertUnauthorized(token(validClaims(), otherKeyPair));
+    }
+
+    @Test
+    void usesEmailFromFirebaseIdentitiesWhenEmailClaimIsMissing() throws Exception {
+        JWTClaimsSet.Builder claims = validClaims()
+                .claim("email", null)
+                .claim("email_verified", null)
+                .claim("firebase", Map.of(
+                        "sign_in_provider", "github.com",
+                        "identities", Map.of(
+                                "github.com", List.of("123"),
+                                "email", List.of("octocat@example.com")
+                        )
+                ));
+
+        ExternalIdentity identity = verifier.verify(token(claims, keyPair));
+
+        assertEquals("octocat@example.com", identity.email());
+        assertEquals("github.com", identity.provider());
     }
 
     @Test
@@ -178,7 +198,7 @@ class FirebaseTokenVerifierTest {
                 .claim("email_verified", false)
                 .claim("firebase", Map.of("sign_in_provider", "github.com"));
 
-        FirebaseIdentity identity = verifier.verify(token(claims, keyPair));
+        ExternalIdentity identity = verifier.verify(token(claims, keyPair));
 
         assertEquals("github.com", identity.provider());
     }

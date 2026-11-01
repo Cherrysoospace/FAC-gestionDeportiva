@@ -2,6 +2,8 @@ package com.fac.backend.security;
 
 import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -18,18 +20,21 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+/**
+ * Implementación de {@link IdentityTokenVerifier} para Google y GitHub:
+ * ambos inician sesión en Firebase y llegan aquí como un ID token firmado.
+ * Es un detalle de infraestructura; los servicios solo conocen la interfaz.
+ */
 @Component
-public class FirebaseTokenVerifier {
+public class FirebaseTokenVerifier implements IdentityTokenVerifier {
+
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseTokenVerifier.class);
 
     static final String GOOGLE_JWKS_URI =
             "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
-
-    static final Set<String> ALLOWED_PROVIDERS = Set.of("google.com", "github.com");
-
-    static final Set<String> PROVIDERS_REQUIRING_VERIFIED_EMAIL = Set.of("google.com");
 
     private final String projectId;
     private final String jwkSetUri;
@@ -46,30 +51,37 @@ public class FirebaseTokenVerifier {
         this.jwkSetUri = jwkSetUri;
     }
 
-    public FirebaseIdentity verify(String idToken) {
+    @Override
+    public ExternalIdentity verify(String idToken) {
         Jwt jwt = decode(idToken);
         Map<String, Object> firebase = firebaseClaim(jwt);
-        String provider = stringClaim(firebase, "sign_in_provider");
+        FirebaseSignInProvider provider = FirebaseSignInProvider
+                .from(stringClaim(firebase, "sign_in_provider"))
+                .orElseThrow(this::unauthorized);
         String uid = jwt.getSubject();
 
-        // Firebase también firma tokens de correo/contraseña, anónimos o por
-        // teléfono: solo se aceptan los proveedores OAuth del anexo (HU-SE-08)
-        if (provider == null || !ALLOWED_PROVIDERS.contains(provider)
-                || uid == null || uid.isBlank()) {
+        if (uid == null || uid.isBlank()) {
             throw unauthorized();
         }
 
-        String email = jwt.getClaimAsString("email");
-        if (email == null || email.isBlank()) {
+        String email = resolveEmail(jwt, firebase);
+        if (email == null) {
+            // Solo nombres de claims, nunca valores: sirve para diagnosticar sin exponer datos
+            logger.warn(
+                    "Token de Firebase sin correo. Proveedor: {}. Claims: {}. firebase.identities: {}",
+                    provider.signInProvider(),
+                    jwt.getClaims().keySet(),
+                    identities(firebase).keySet()
+            );
             throw new ApplicationException(
                     ErrorCase.INVALID_OPERATION,
-                    "El proveedor no entregó un correo"
+                    missingEmailMessage(provider)
             );
         }
 
         // GitHub suele llegar con email_verified=false aunque el correo sea
         // legítimo, por eso la verificación solo se exige donde es confiable
-        if (PROVIDERS_REQUIRING_VERIFIED_EMAIL.contains(provider)
+        if (provider.requiresVerifiedEmail()
                 && !Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified"))) {
             throw new ApplicationException(
                     ErrorCase.UNAUTHORIZED,
@@ -77,8 +89,8 @@ public class FirebaseTokenVerifier {
             );
         }
 
-        return new FirebaseIdentity(
-                provider,
+        return new ExternalIdentity(
+                provider.signInProvider(),
                 uid,
                 email,
                 jwt.getClaimAsString("name"),
@@ -108,6 +120,43 @@ public class FirebaseTokenVerifier {
         }
 
         throw unauthorized();
+    }
+
+    /**
+     * El correo suele venir en el claim "email". Si la cuenta de Firebase no
+     * lo tiene guardado (por ejemplo, se creó antes de pedir el scope
+     * user:email en GitHub), Firebase aún puede incluirlo en
+     * firebase.identities.email, que también está firmado por Google.
+     */
+    private String resolveEmail(Jwt jwt, Map<String, Object> firebase) {
+        String email = jwt.getClaimAsString("email");
+        if (email != null && !email.isBlank()) {
+            return email.trim();
+        }
+
+        Object emails = identities(firebase).get("email");
+        if (emails instanceof List<?> values) {
+            return values.stream()
+                    .filter(String.class::isInstance)
+                    .map(value -> ((String) value).trim())
+                    .filter(value -> !value.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    private Map<?, ?> identities(Map<String, Object> firebase) {
+        Object identities = firebase.get("identities");
+        return identities instanceof Map<?, ?> values ? values : Map.of();
+    }
+
+    private String missingEmailMessage(FirebaseSignInProvider provider) {
+        if (provider == FirebaseSignInProvider.GITHUB) {
+            return "Tu cuenta de GitHub no compartió un correo. Agrega un correo "
+                    + "verificado en GitHub (Settings → Emails) e inténtalo de nuevo.";
+        }
+        return "El proveedor no entregó un correo";
     }
 
     private String stringClaim(Map<String, Object> claims, String name) {

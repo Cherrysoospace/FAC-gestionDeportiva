@@ -8,12 +8,9 @@ import com.fac.backend.entity.User;
 import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
 import com.fac.backend.repository.UserRepository;
-import com.fac.backend.security.FirebaseIdentity;
-import com.fac.backend.security.FirebaseTokenVerifier;
-import com.fac.backend.security.OAuthCodeProviderStrategy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -49,20 +45,22 @@ class AuthServiceTest {
     private SessionService sessionService;
 
     @Mock
-    private UserService userService;
-
-    @Mock
-    private FirebaseTokenVerifier firebaseTokenVerifier;
-
-    @Mock
     private TwoFactorService twoFactorService;
 
-    @Mock
-    
-    private OAuthCodeProviderStrategy oauthCodeProviderStrategy;
-
-    @InjectMocks
     private AuthService authService;
+
+    @BeforeEach
+    void setUp() {
+        // SessionIssuer y AccountStatusPolicy son reales: así la prueba sigue
+        // comprobando que se emite el JWT y se guarda la sesión
+        authService = new AuthService(
+                userRepository,
+                passwordEncoder,
+                twoFactorService,
+                new SessionIssuer(jwtService, sessionService),
+                new AccountStatusPolicy()
+        );
+    }
 
     @Test
     void loginIssuesAndPersistsSession() {
@@ -245,124 +243,6 @@ class AuthServiceTest {
         );
 
         assertEquals(ErrorCase.FORBIDDEN, exception.getErrorCase());
-    }
-
-    @Test
-    void firebaseLoginResolvesUserAndIssuesSession() {
-        FirebaseIdentity identity = new FirebaseIdentity(
-                "google.com",
-                "uid-1",
-                "google@example.com",
-                "Google User",
-                null
-        );
-        User user = user(true);
-
-        when(firebaseTokenVerifier.verify("id-token"))
-                .thenReturn(identity);
-        when(userService.resolverUsuario(
-                "google.com",
-                "uid-1",
-                "google@example.com",
-                "Google User",
-                null
-        )).thenReturn(user);
-
-        Instant expiresAt = Instant.now().plusSeconds(900);
-        AuthResponseDTO response = new AuthResponseDTO(
-                "jwt-token",
-                "Bearer",
-                expiresAt
-        );
-        when(jwtService.generateToken(user)).thenReturn(
-                new JwtService.IssuedToken(response, "jti-2", expiresAt)
-        );
-
-        AuthResponseDTO result = authService.loginWithFirebase("id-token");
-
-        assertSame(response, result);
-        verify(twoFactorService, never()).startChallenge(any());
-        verify(sessionService).registerAuthenticatedSession(
-                user,
-                "jti-2",
-                expiresAt
-        );
-    }
-
-    @Test
-    void firebaseLoginRejectsDisabledUser() {
-        FirebaseIdentity identity = new FirebaseIdentity(
-                "google.com",
-                "uid-2",
-                "disabled@example.com",
-                "Disabled",
-                null
-        );
-        User user = user(false);
-
-        when(firebaseTokenVerifier.verify("id-token"))
-                .thenReturn(identity);
-        when(userService.resolverUsuario(
-                "google.com",
-                "uid-2",
-                "disabled@example.com",
-                "Disabled",
-                null
-        )).thenReturn(user);
-
-        ApplicationException exception = assertThrows(
-                ApplicationException.class,
-                () -> authService.loginWithFirebase("id-token")
-        );
-
-        assertEquals(ErrorCase.FORBIDDEN, exception.getErrorCase());
-        verify(jwtService, never()).generateToken(user);
-    }
-
-    @Test
-    void discordLoginUsesStrategyResolvesUserAndIssuesSession() {
-        FirebaseIdentity identity = new FirebaseIdentity(
-                "discord",
-                "discord-123",
-                "fercho@example.com",
-                "Fercho",
-                null
-        );
-        User user = user(true);
-
-        when(oauthCodeProviderStrategy.authenticate(
-                "code-abc",
-                "http://localhost:3000/auth/discord/callback"
-        )).thenReturn(identity);
-        when(userService.resolverUsuario(
-                "discord",
-                "discord-123",
-                "fercho@example.com",
-                "Fercho",
-                null
-        )).thenReturn(user);
-
-        Instant expiresAt = Instant.now().plusSeconds(900);
-        AuthResponseDTO response = new AuthResponseDTO(
-                "jwt-token",
-                "Bearer",
-                expiresAt
-        );
-        when(jwtService.generateToken(user)).thenReturn(
-                new JwtService.IssuedToken(response, "jti-discord", expiresAt)
-        );
-
-        AuthResponseDTO result = authService.loginWithDiscord(
-                "code-abc",
-                "http://localhost:3000/auth/discord/callback"
-        );
-
-        assertSame(response, result);
-        verify(sessionService).registerAuthenticatedSession(
-                user,
-                "jti-discord",
-                expiresAt
-        );
     }
 
     private User user(boolean enabled) {

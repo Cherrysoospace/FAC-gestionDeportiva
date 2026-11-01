@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PermissionCatalogServiceTest {
 
     private final PermissionCatalogService service =
-            new PermissionCatalogService();
+            new PermissionCatalogService(new PermissionClassifier());
 
     @Test
     void groupsPermissionsByModuleAndResource() {
@@ -37,50 +37,6 @@ class PermissionCatalogServiceTest {
                 catalog.getModules().get(0).getResources().stream()
                         .map(resource -> resource.getName())
                         .toList()
-        );
-    }
-
-    @Test
-    void derivesOperationsFromHttpMethodAndUrl() {
-        assertEquals(
-                PermissionOperation.LISTAR,
-                service.resolveOperation("GET", "/api/users")
-        );
-        assertEquals(
-                PermissionOperation.VER,
-                service.resolveOperation("GET", "/api/users/1")
-        );
-        assertEquals(
-                PermissionOperation.CREAR,
-                service.resolveOperation("POST", "/api/users")
-        );
-        assertEquals(
-                PermissionOperation.ACTUALIZAR,
-                service.resolveOperation("PUT", "/api/users/1")
-        );
-        assertEquals(
-                PermissionOperation.ELIMINAR,
-                service.resolveOperation("DELETE", "/api/users/1")
-        );
-    }
-
-    @Test
-    void identifiesSubresourcesAndSpanishResources() {
-        assertEquals(
-                "Sesiones",
-                service.resolveResource("/api/users/1/sessions").resource()
-        );
-        assertEquals(
-                "Perfiles",
-                service.resolveResource("/api/users/1/profile").resource()
-        );
-        assertEquals(
-                "Torneos",
-                service.resolveResource("/api/tournaments").resource()
-        );
-        assertEquals(
-                "Entradas",
-                service.resolveResource("/api/tickets").resource()
         );
     }
 

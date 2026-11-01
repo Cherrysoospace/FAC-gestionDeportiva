@@ -10,9 +10,9 @@ import lombok.Setter;
 public class LoginRequestDTO {
 
     @NotBlank(message = "El email es obligatorio")
-    @Email(message = "El email no tiene un formato vÃ¡lido")
+    @Email(message = "El email no tiene un formato válido")
     private String email;
 
-    @NotBlank(message = "La contraseÃ±a es obligatoria")
+    @NotBlank(message = "La contraseña es obligatoria")
     private String password;
 }

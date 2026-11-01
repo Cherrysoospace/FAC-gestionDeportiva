@@ -10,6 +10,7 @@ import com.fac.backend.mapper.SessionMapper;
 import com.fac.backend.repository.SessionRepository;
 import com.fac.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -63,6 +64,7 @@ public class SessionService {
         sessionRepository.delete(findSession(userId, sessionId));
     }
 
+    @Transactional
     public void invalidate(String jti) {
         sessionRepository.findByJti(jti).ifPresent(session -> {
             if (!session.isInvalidated()) {
@@ -95,7 +97,7 @@ public class SessionService {
         return sessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new ApplicationException(
                         ErrorCase.NOT_FOUND,
-                        "SesiÃ³n no encontrada para este usuario"
+                        "Sesión no encontrada para este usuario"
                 ));
     }
 }

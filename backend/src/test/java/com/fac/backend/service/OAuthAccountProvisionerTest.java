@@ -1,21 +1,15 @@
 package com.fac.backend.service;
 
-import com.fac.backend.entity.Role;
 import com.fac.backend.entity.User;
-import com.fac.backend.entity.UserRole;
 import com.fac.backend.exception.ApplicationException;
 import com.fac.backend.exception.ErrorCase;
-import com.fac.backend.mapper.UserMapper;
-import com.fac.backend.repository.RoleRepository;
 import com.fac.backend.repository.UserRepository;
-import com.fac.backend.repository.UserRoleRepository;
+import com.fac.backend.security.ExternalIdentity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -29,25 +23,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class UserServiceResolverTest {
+class OAuthAccountProvisionerTest {
 
     @Mock
     private UserRepository userRepository;
 
     @Mock
-    private UserMapper userMapper;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private RoleRepository roleRepository;
-
-    @Mock
-    private UserRoleRepository userRoleRepository;
+    private UserRoleService userRoleService;
 
     @InjectMocks
-    private UserService userService;
+    private OAuthAccountProvisioner provisioner;
 
     @Test
     void createsNewOauthUserWithAficionadoRole() {
@@ -64,19 +49,14 @@ class UserServiceResolverTest {
                     return user;
                 });
 
-        Role role = new Role();
-        role.setId(2L);
-        role.setName("AFICIONADO");
-        when(roleRepository.findByNameIgnoreCase("AFICIONADO"))
-                .thenReturn(Optional.of(role));
 
-        User result = userService.resolverUsuario(
+        User result = provisioner.resolve(new ExternalIdentity(
                 "google.com",
                 "uid-1",
                 "new@example.com",
                 null,
                 null
-        );
+        ));
 
         assertEquals("new", result.getName());
         assertEquals("new@example.com", result.getEmail());
@@ -85,11 +65,7 @@ class UserServiceResolverTest {
         assertEquals("uid-1", result.getExternalId());
         assertTrue(result.isEnabled());
 
-        ArgumentCaptor<UserRole> captor =
-                ArgumentCaptor.forClass(UserRole.class);
-        verify(userRoleRepository).save(captor.capture());
-        assertEquals(result, captor.getValue().getUser());
-        assertEquals(role, captor.getValue().getRole());
+        verify(userRoleService).assignDefaultRole(result);
     }
 
     @Test
@@ -103,18 +79,14 @@ class UserServiceResolverTest {
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Role role = new Role();
-        role.setName("AFICIONADO");
-        when(roleRepository.findByNameIgnoreCase("AFICIONADO"))
-                .thenReturn(Optional.of(role));
 
-        User result = userService.resolverUsuario(
+        User result = provisioner.resolve(new ExternalIdentity(
                 "google.com",
                 "uid-2",
                 "named@example.com",
                 "Nombre Google",
                 "https://example.com/photo.png"
-        );
+        ));
 
         assertEquals("Nombre Google", result.getName());
     }
@@ -127,17 +99,17 @@ class UserServiceResolverTest {
                 "uid-3"
         )).thenReturn(Optional.of(existing));
 
-        User result = userService.resolverUsuario(
+        User result = provisioner.resolve(new ExternalIdentity(
                 "google.com",
                 "uid-3",
                 "existing@example.com",
                 "Existing",
                 null
-        );
+        ));
 
         assertEquals(existing, result);
         verify(userRepository, never()).save(any(User.class));
-        verify(userRoleRepository, never()).save(any(UserRole.class));
+        verify(userRoleService, never()).assignDefaultRole(any(User.class));
     }
 
     @Test
@@ -153,13 +125,13 @@ class UserServiceResolverTest {
 
         ApplicationException exception = assertThrows(
                 ApplicationException.class,
-                () -> userService.resolverUsuario(
+                () -> provisioner.resolve(new ExternalIdentity(
                         "google.com",
                         "uid-4",
                         "taken@example.com",
                         "Taken",
                         null
-                )
+                ))
         );
 
         assertEquals(ErrorCase.ALREADY_EXISTS, exception.getErrorCase());
@@ -184,13 +156,13 @@ class UserServiceResolverTest {
 
         ApplicationException exception = assertThrows(
                 ApplicationException.class,
-                () -> userService.resolverUsuario(
+                () -> provisioner.resolve(new ExternalIdentity(
                         "github.com",
                         "uid-6",
                         "local@example.com",
                         "Local",
                         null
-                )
+                ))
         );
 
         assertEquals(
@@ -198,28 +170,6 @@ class UserServiceResolverTest {
                         + "Inicia sesión con correo y contraseña.",
                 exception.getMessage()
         );
-    }
-
-    @Test
-    void rejectsDisabledExistingUser() {
-        User existing = user("disabled@example.com", false);
-        when(userRepository.findByAuthProviderAndExternalId(
-                "google.com",
-                "uid-5"
-        )).thenReturn(Optional.of(existing));
-
-        ApplicationException exception = assertThrows(
-                ApplicationException.class,
-                () -> userService.resolverUsuario(
-                        "google.com",
-                        "uid-5",
-                        "disabled@example.com",
-                        "Disabled",
-                        null
-                )
-        );
-
-        assertEquals(ErrorCase.FORBIDDEN, exception.getErrorCase());
     }
 
     private User user(String email, boolean enabled) {

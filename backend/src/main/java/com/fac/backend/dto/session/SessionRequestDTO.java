@@ -16,14 +16,14 @@ public class SessionRequestDTO {
     @NotBlank(message = "El token es obligatorio")
     private String token;
 
-    @NotNull(message = "La fecha de expiraciÃ³n es obligatoria")
-    @Future(message = "La fecha de expiraciÃ³n debe estar en el futuro")
+    @NotNull(message = "La fecha de expiración es obligatoria")
+    @Future(message = "La fecha de expiración debe estar en el futuro")
     private LocalDateTime expiration;
 
     @Size(
             min = 6,
             max = 10,
-            message = "El cÃ³digo 2FA debe tener entre 6 y 10 caracteres"
+            message = "El código 2FA debe tener entre 6 y 10 caracteres"
     )
     private String code2FA;
 }

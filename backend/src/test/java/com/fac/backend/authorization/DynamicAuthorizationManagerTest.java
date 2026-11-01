@@ -2,7 +2,9 @@ package com.fac.backend.authorization;
 
 import com.fac.backend.entity.Permission;
 import com.fac.backend.security.EffectivePermissionsFilter;
-import com.fac.backend.service.PermissionService;
+import com.fac.backend.entity.Permission;
+import com.fac.backend.service.EffectivePermissionService;
+import java.util.List;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +27,7 @@ import static org.mockito.Mockito.when;
 class DynamicAuthorizationManagerTest {
 
     @Mock
-    private PermissionService permissionService;
+    private EffectivePermissionService effectivePermissionService;
 
     @InjectMocks
     private DynamicAuthorizationManager authorizationManager;
@@ -33,8 +35,8 @@ class DynamicAuthorizationManagerTest {
     @Test
     void grantsAccessWhenUserHasPermission() {
         MockHttpServletRequest request = request("GET", "/api/roles");
-        when(permissionService.hasPermission(1L, "GET", "/api/roles"))
-                .thenReturn(true);
+        when(effectivePermissionService.findByUserId(1L))
+                .thenReturn(List.of(permission("GET", "/api/roles")));
 
         AuthorizationResult result = authorize(request, authenticated("1"));
 
@@ -44,11 +46,8 @@ class DynamicAuthorizationManagerTest {
     @Test
     void deniesAccessWhenUserLacksPermission() {
         MockHttpServletRequest request = request("PUT", "/api/roles/1/permissions");
-        when(permissionService.hasPermission(
-                1L,
-                "PUT",
-                "/api/roles/1/permissions"
-        )).thenReturn(false);
+        when(effectivePermissionService.findByUserId(1L))
+                .thenReturn(List.of(permission("GET", "/api/roles/{id}/permissions")));
 
         AuthorizationResult result = authorize(request, authenticated("1"));
 
@@ -62,7 +61,7 @@ class DynamicAuthorizationManagerTest {
         AuthorizationResult result = authorize(request, null);
 
         assertFalse(result.isGranted());
-        verifyNoInteractions(permissionService);
+        verifyNoInteractions(effectivePermissionService);
     }
 
     @Test
@@ -75,7 +74,7 @@ class DynamicAuthorizationManagerTest {
         );
 
         assertFalse(result.isGranted());
-        verifyNoInteractions(permissionService);
+        verifyNoInteractions(effectivePermissionService);
     }
 
     @Test
@@ -85,7 +84,7 @@ class DynamicAuthorizationManagerTest {
         AuthorizationResult result = authorize(request, authenticated("1"));
 
         assertTrue(result.isGranted());
-        verifyNoInteractions(permissionService);
+        verifyNoInteractions(effectivePermissionService);
     }
 
     @Test
@@ -95,7 +94,7 @@ class DynamicAuthorizationManagerTest {
         AuthorizationResult result = authorize(request, authenticated("1"));
 
         assertTrue(result.isGranted());
-        verifyNoInteractions(permissionService);
+        verifyNoInteractions(effectivePermissionService);
     }
 
     @Test
@@ -113,7 +112,7 @@ class DynamicAuthorizationManagerTest {
         AuthorizationResult result = authorize(request, authenticated("1"));
 
         assertTrue(result.isGranted());
-        verifyNoInteractions(permissionService);
+        verifyNoInteractions(effectivePermissionService);
     }
 
     private MockHttpServletRequest request(String method, String uri) {
@@ -141,5 +140,9 @@ class DynamicAuthorizationManagerTest {
                 () -> authentication,
                 context
         );
+    }
+
+    private Permission permission(String method, String url) {
+        return Permission.builder().method(method).url(url).build();
     }
 }

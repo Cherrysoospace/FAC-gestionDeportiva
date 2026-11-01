@@ -2,7 +2,7 @@ package com.fac.backend.authorization;
 
 import com.fac.backend.entity.Permission;
 import com.fac.backend.security.EffectivePermissionsFilter;
-import com.fac.backend.service.PermissionService;
+import com.fac.backend.service.EffectivePermissionService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ public class DynamicAuthorizationManager
 
     private static final String OWN_PROFILE_PATH = "/api/profile/me";
 
-    private final PermissionService permissionService;
+    private final EffectivePermissionService effectivePermissionService;
 
     @Override
     public AuthorizationResult authorize(
@@ -61,17 +61,18 @@ public class DynamicAuthorizationManager
             return new AuthorizationDecision(true);
         }
 
-        List<Permission> effectivePermissions =
-                resolveEffectivePermissions(request);
+        // El filtro ya cargó los permisos efectivos; si no, se consultan (con caché)
+        List<Permission> effectivePermissions = resolveEffectivePermissions(request);
+        if (effectivePermissions == null) {
+            effectivePermissions = effectivePermissionService.findByUserId(userId);
+        }
 
-        boolean permitted = effectivePermissions != null
-                ? effectivePermissions.stream()
-                        .anyMatch(permission -> PermissionMatcher.matches(
-                                permission,
-                                method,
-                                url
-                        ))
-                : permissionService.hasPermission(userId, method, url);
+        boolean permitted = effectivePermissions.stream()
+                .anyMatch(permission -> PermissionMatcher.matches(
+                        permission,
+                        method,
+                        url
+                ));
 
         return new AuthorizationDecision(permitted);
     }

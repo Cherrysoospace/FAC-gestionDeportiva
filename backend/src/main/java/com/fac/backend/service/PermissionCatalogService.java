@@ -11,11 +11,20 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * Arma el catálogo de permisos que se muestra en la matriz (HU-SE-06):
+ * agrupa por módulo y recurso y ordena. Cómo se clasifica cada URL lo decide
+ * {@link PermissionClassifier}; esta clase solo se ocupa de la presentación.
+ */
 @Service
+@RequiredArgsConstructor
 public class PermissionCatalogService {
+
+    private final PermissionClassifier classifier;
+
 
     private static final List<String> MODULE_ORDER = List.of(
             "Administración",
@@ -91,8 +100,9 @@ public class PermissionCatalogService {
 
     public PermissionItemDTO toItem(Permission permission) {
         // Lo guardado en el permiso manda; la URL solo cubre permisos antiguos
-        ResourceDescriptor derived = resolveResource(permission.getUrl());
-        PermissionOperation operation = resolveOperation(
+        PermissionClassifier.ResourceDescriptor derived =
+                classifier.resolveResource(permission.getUrl());
+        PermissionOperation operation = classifier.resolveOperation(
                 permission.getMethod(),
                 permission.getUrl()
         );
@@ -106,72 +116,6 @@ public class PermissionCatalogService {
                 operation,
                 operation.getLabel()
         );
-    }
-
-    public PermissionOperation resolveOperation(String method, String url) {
-        String normalizedMethod = method == null
-                ? ""
-                : method.toUpperCase(Locale.ROOT);
-
-        boolean hasIdentifier = hasIdentifier(url);
-
-        return switch (normalizedMethod) {
-            case "GET" -> hasIdentifier
-                    ? PermissionOperation.VER
-                    : PermissionOperation.LISTAR;
-            case "POST" -> PermissionOperation.CREAR;
-            case "PUT", "PATCH" -> PermissionOperation.ACTUALIZAR;
-            case "DELETE" -> PermissionOperation.ELIMINAR;
-            default -> hasIdentifier
-                    ? PermissionOperation.VER
-                    : PermissionOperation.LISTAR;
-        };
-    }
-
-    public ResourceDescriptor resolveResource(String url) {
-        String path = url == null ? "" : url;
-        if (path.startsWith("/api/")) {
-            path = path.substring(5);
-        }
-
-        String[] segments = path.split("/");
-        String root = segments.length > 0 ? segments[0] : "";
-        String third = segments.length > 2 ? segments[2] : "";
-
-        if ("users".equals(root)) {
-            if ("sessions".equals(third)) {
-                return new ResourceDescriptor("Seguridad", "Sesiones");
-            }
-            if ("profile".equals(third)) {
-                return new ResourceDescriptor("Administración", "Perfiles");
-            }
-        }
-
-        return switch (root) {
-            case "users" -> new ResourceDescriptor("Administración", "Usuarios");
-            case "roles" -> new ResourceDescriptor("Administración", "Roles");
-            case "permissions" -> new ResourceDescriptor("Administración", "Permisos");
-            case "role-permissions" ->
-                    new ResourceDescriptor("Administración", "Asignación de permisos");
-            case "user-roles" ->
-                    new ResourceDescriptor("Administración", "Asignación de roles");
-            case "auth" -> new ResourceDescriptor("Seguridad", "Autenticación");
-            case "tournaments", "torneos" ->
-                    new ResourceDescriptor("Gestión Deportiva", "Torneos");
-            case "teams", "equipos" ->
-                    new ResourceDescriptor("Gestión Deportiva", "Equipos");
-            case "players", "jugadores" ->
-                    new ResourceDescriptor("Gestión Deportiva", "Jugadores");
-            case "matches", "partidos" ->
-                    new ResourceDescriptor("Gestión Deportiva", "Partidos");
-            case "tickets", "entradas" ->
-                    new ResourceDescriptor("Comercial", "Entradas");
-            case "venues", "escenarios" ->
-                    new ResourceDescriptor("Infraestructura", "Escenarios");
-            case "reports", "reportes" ->
-                    new ResourceDescriptor("Reportes", "Reportes");
-            default -> new ResourceDescriptor("Otros", humanize(root));
-        };
     }
 
     private PermissionModuleDTO buildModule(
@@ -206,26 +150,6 @@ public class PermissionCatalogService {
         return stored == null || stored.isBlank() ? derived : stored;
     }
 
-    private boolean hasIdentifier(String url) {
-        if (url == null) {
-            return false;
-        }
-
-        return Stream.of(url.split("/"))
-                .anyMatch(segment -> segment.equals("{id}")
-                        || segment.matches("\\d+")
-                        || segment.matches("[a-fA-F0-9]{24}"));
-    }
-
-    private String humanize(String value) {
-        if (value == null || value.isBlank()) {
-            return "General";
-        }
-
-        String cleaned = value.replace('-', ' ').replace('_', ' ').trim();
-        return Character.toUpperCase(cleaned.charAt(0)) + cleaned.substring(1);
-    }
-
     private int moduleRank(String module) {
         int index = MODULE_ORDER.indexOf(module);
         return index >= 0 ? index : Integer.MAX_VALUE;
@@ -241,6 +165,4 @@ public class PermissionCatalogService {
         return index >= 0 ? index : Integer.MAX_VALUE;
     }
 
-    public record ResourceDescriptor(String module, String resource) {
-    }
 }

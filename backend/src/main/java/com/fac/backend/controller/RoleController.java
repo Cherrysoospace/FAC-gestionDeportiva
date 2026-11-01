@@ -9,6 +9,7 @@ import com.fac.backend.dto.role.RoleRequestDTO;
 import com.fac.backend.dto.role.RoleResponseDTO;
 import com.fac.backend.dto.RolePermissionsResponseDTO;
 import com.fac.backend.service.RolePermissionService;
+import com.fac.backend.service.RoleSummaryService;
 import com.fac.backend.service.RoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class RoleController {
 
     private final RoleService roleService;
     private final RolePermissionService rolePermissionService;
+    private final RoleSummaryService roleSummaryService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -61,7 +63,7 @@ public class RoleController {
 
     @GetMapping("/{id}/summary")
     public RoleSummaryResponseDTO findSummary(@PathVariable Long id) {
-        return rolePermissionService.findRoleSummary(id);
+        return roleSummaryService.findRoleSummary(id);
     }
 
     @PutMapping("/{id}/permissions")

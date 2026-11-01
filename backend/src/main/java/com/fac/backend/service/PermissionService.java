@@ -28,7 +28,7 @@ public class PermissionService {
 
     private final PermissionMapper permissionMapper;
     private final RolePermissionRepository rolePermissionRepository;
-    private final EffectivePermissionService effectivePermissionService;
+    private final PermissionClassifier permissionClassifier;
     private final PermissionCatalogService permissionCatalogService;
 
     @CacheEvict(
@@ -93,21 +93,6 @@ public class PermissionService {
         permissionRepository.deleteById(id);
     }
 
-    @Transactional(readOnly = true)
-    public boolean hasPermission(
-            Long userId,
-            String httpMethod,
-            String requestUrl) {
-
-        return effectivePermissionService.findByUserId(userId)
-                .stream()
-                .anyMatch(permission -> PermissionMatcher.matches(
-                        permission,
-                        httpMethod,
-                        requestUrl
-                ));
-    }
-
     /**
      * HU-SE-05: deja la URL en la misma forma que usa el PermissionMatcher
      * (/api/users/1, /api/users/{id} y /api/users/{id}/ son el mismo permiso)
@@ -117,8 +102,8 @@ public class PermissionService {
         dto.setUrl(PermissionMatcher.normalizeUrl(dto.getUrl().trim()));
         dto.setMethod(dto.getMethod().trim().toUpperCase(Locale.ROOT));
 
-        PermissionCatalogService.ResourceDescriptor derived =
-                permissionCatalogService.resolveResource(dto.getUrl());
+        PermissionClassifier.ResourceDescriptor derived =
+                permissionClassifier.resolveResource(dto.getUrl());
         dto.setModule(valueOrDefault(dto.getModule(), derived.module()));
         dto.setResource(valueOrDefault(dto.getResource(), derived.resource()));
     }
