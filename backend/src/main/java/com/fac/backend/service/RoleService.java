@@ -99,4 +99,4 @@ public class RoleService {
                     ErrorCase.NOT_FOUND, "Rol no encontrado"
                 ));
     }
-}
+}

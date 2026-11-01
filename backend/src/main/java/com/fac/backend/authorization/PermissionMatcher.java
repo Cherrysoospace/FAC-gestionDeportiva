@@ -13,7 +13,7 @@ public final class PermissionMatcher {
         }
 
         String normalized = requestUrl.replaceAll(
-                "(?i)(?<=/)(?:\\d+|[a-f0-9]{24})(?=/|$)",
+                "(?i)(?<=/)(?:\\d+|[a-f0-9]{24}|\\?)(?=/|$)",
                 "{id}"
         );
 
@@ -36,6 +36,10 @@ public final class PermissionMatcher {
             Permission permission,
             String httpMethod,
             String requestUrl) {
+
+        if (permission == null || permission.getMethod() == null || httpMethod == null || requestUrl == null) {
+            return false;
+        }
 
         return permission.getMethod().equalsIgnoreCase(httpMethod)
                 && normalizeUrl(permission.getUrl()).equals(normalizeUrl(requestUrl));

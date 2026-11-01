@@ -5,7 +5,7 @@ import {
 } from '@/types/security';
 
 export function normalizeEndpointUrl(url: string): string {
-    const normalized = url.replace(/(^|\/)(?:\d+|[a-f0-9]{24})(?=\/|$)/gi, '$1{id}');
+    const normalized = url.replace(/(^|\/)(?:\d+|[a-f0-9]{24}|\?)(?=\/|$)/gi, '$1{id}');
 
     if (normalized.length > 1 && normalized.endsWith('/')) {
         return normalized.slice(0, -1);

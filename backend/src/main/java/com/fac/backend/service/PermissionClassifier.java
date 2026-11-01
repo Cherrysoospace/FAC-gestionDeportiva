@@ -86,6 +86,7 @@ public class PermissionClassifier {
 
         return Stream.of(url.split("/"))
                 .anyMatch(segment -> segment.equals("{id}")
+                        || segment.equals("?")
                         || segment.matches("\\d+")
                         || segment.matches("[a-fA-F0-9]{24}"));
     }
