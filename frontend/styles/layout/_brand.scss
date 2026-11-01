@@ -38,3 +38,80 @@ button:focus-visible,
         radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--primary-color) 10%, transparent), transparent 40%),
         var(--surface-ground);
 }
+
+/* Usuario en la barra superior: foto, nombre y rol (visible en todas las pantallas) */
+.layout-topbar .layout-topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 20rem;
+    margin-left: 1rem;
+    padding: 0.375rem 0.75rem 0.375rem 0.375rem;
+    border-radius: 999px;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: var(--surface-hover);
+    }
+
+    .layout-topbar-user-avatar {
+        flex-shrink: 0;
+        width: 2.75rem;
+        height: 2.75rem;
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .layout-topbar-user-initials {
+        background-color: var(--primary-color);
+        color: var(--primary-color-text);
+        font-weight: 600;
+    }
+
+    .layout-topbar-user-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.25;
+    }
+
+    .layout-topbar-user-name,
+    .layout-topbar-user-role {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .layout-topbar-user-name {
+        font-weight: 600;
+    }
+
+    .layout-topbar-user-role {
+        font-size: 0.8125rem;
+        color: var(--text-color-secondary);
+    }
+
+    .layout-topbar-user-chevron {
+        font-size: 0.75rem;
+        color: var(--text-color-secondary);
+    }
+}
+
+/* En pantallas pequeñas va dentro del menú desplegable de la barra */
+@media (max-width: 991px) {
+    .layout-topbar .layout-topbar-menu .layout-topbar-user {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        border-radius: 12px;
+        padding: 0.75rem;
+    }
+}

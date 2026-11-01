@@ -12,7 +12,7 @@ function greetingFor(hour: number): string {
 
 // Datos de la pantalla de inicio: saludo, roles del usuario y módulos a los que puede entrar.
 export function useHomeSummary() {
-    const { user, roles, permissionsStatus, hasPermissionUrl, refreshPermissions } = useAuth();
+    const { user, photoUrl, roles, permissionsStatus, hasPermissionUrl, refreshPermissions } = useAuth();
 
     const modules = useMemo(() => getAllowedModules(hasPermissionUrl), [hasPermissionUrl]);
     const activeRoles = useMemo(() => roles.filter((role) => role.active !== false), [roles]);
@@ -21,6 +21,7 @@ export function useHomeSummary() {
         greeting: greetingFor(new Date().getHours()),
         userName: user?.name ?? '',
         email: user?.email ?? '',
+        photoUrl,
         roles: activeRoles,
         modules,
         loading: permissionsStatus === 'loading' || (!user && permissionsStatus !== 'error'),

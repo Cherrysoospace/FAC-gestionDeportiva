@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '@/layout/context/authcontext';
 import { describeError } from '@/lib/api-errors';
 import { fetchMyProfile, removeMyProfilePhoto, updateMyProfile, uploadMyProfilePhoto } from '@/lib/profile-api';
 import { validatePhone, validateProfilePhoto } from '@/lib/profile-rules';
@@ -6,6 +7,7 @@ import { ActionResult } from '@/types/action';
 import { MyProfile, PersonalDataInput } from '@/types/profile';
 
 export function useMyProfile() {
+    const { setPhotoUrl } = useAuth();
     const [profile, setProfile] = useState<MyProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -33,14 +35,17 @@ export function useMyProfile() {
     const run = useCallback(async (setBusy: (busy: boolean) => void, action: () => Promise<MyProfile>): Promise<ActionResult> => {
         setBusy(true);
         try {
-            setProfile(await action());
+            const updated = await action();
+            setProfile(updated);
+            // El navbar y el inicio muestran la misma foto: se actualiza sin recargar
+            setPhotoUrl(updated.photoUrl ?? null);
             return { ok: true };
         } catch (cause) {
             return { ok: false, error: describeError(cause) };
         } finally {
             setBusy(false);
         }
-    }, []);
+    }, [setPhotoUrl]);
 
     const savePersonalData = useCallback(
         (data: PersonalDataInput): Promise<ActionResult> => {

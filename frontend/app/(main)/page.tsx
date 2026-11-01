@@ -7,11 +7,11 @@ import WelcomeCard from './components/WelcomeCard';
 import { useHomeSummary } from './hooks/useHomeSummary';
 
 export default function HomePage() {
-    const { greeting, userName, email, roles, modules, loading, failed, retry } = useHomeSummary();
+    const { greeting, userName, email, photoUrl, roles, modules, loading, failed, retry } = useHomeSummary();
 
     return (
         <>
-            <WelcomeCard greeting={greeting} userName={userName} email={email} roles={roles} loading={loading} />
+            <WelcomeCard greeting={greeting} userName={userName} email={email} photoUrl={photoUrl} roles={roles} loading={loading} />
 
             {failed && (
                 <div className="flex flex-column sm:flex-row sm:align-items-center gap-3 mb-4">

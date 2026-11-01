@@ -26,6 +26,7 @@ import {
     hasPermissionRequirement
 } from '@/lib/access';
 import { auth } from '@/lib/firebase';
+import { fetchMyProfile } from '@/lib/profile-api';
 import { fetchCurrentUser } from '@/lib/security-api';
 import { verifyTwoFactorCode } from '@/lib/two-factor-api';
 import {
@@ -65,6 +66,10 @@ interface AuthContextValue {
     isAuthenticated: boolean;
     isLoading: boolean;
     user: CurrentUser | null;
+    /** Foto del perfil (subida o del proveedor OAuth); null si no tiene */
+    photoUrl: string | null;
+    /** El perfil la actualiza al subir o quitar la foto para que el navbar cambie al instante */
+    setPhotoUrl: (photoUrl: string | null) => void;
     permissions: PermissionItem[];
     roles: RoleSummary[];
     permissionsStatus: PermissionsStatus;
@@ -106,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState<CurrentUser | null>(null);
+    const [photoUrl, setPhotoUrl] = useState<string | null>(null);
     const [permissionsStatus, setPermissionsStatus] =
         useState<PermissionsStatus>('idle');
 
@@ -116,9 +122,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const currentUser = await fetchCurrentUser();
             setUser(currentUser);
             setPermissionsStatus('ready');
+
+            // La foto vive en el perfil, no en /auth/me. Si falla, se usan las iniciales.
+            fetchMyProfile()
+                .then((profile) => setPhotoUrl(profile.photoUrl ?? null))
+                .catch(() => setPhotoUrl(null));
         } catch (cause) {
             if (cause instanceof ApiRequestError && cause.status === 401) {
                 setUser(null);
+                setPhotoUrl(null);
                 setToken(null);
                 setExpiresAt(null);
                 setPermissionsStatus('idle');
@@ -155,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setToken(null);
             setExpiresAt(null);
             setUser(null);
+            setPhotoUrl(null);
             setPermissionsStatus('idle');
             return;
         }
@@ -164,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setToken(null);
             setExpiresAt(null);
             setUser(null);
+            setPhotoUrl(null);
             setPermissionsStatus('idle');
         }, remaining);
 
@@ -338,6 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(null);
         setExpiresAt(null);
         setUser(null);
+        setPhotoUrl(null);
         setPermissionsStatus('idle');
         router.push('/auth/login');
     }, [router]);
@@ -384,6 +399,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isAuthenticated: authenticated,
             isLoading,
             user,
+            photoUrl,
+            setPhotoUrl,
             permissions: user?.permissions ?? [],
             roles: user?.roles ?? [],
             permissionsStatus,
@@ -404,6 +421,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         expiresAt,
         isLoading,
         user,
+        photoUrl,
         permissionsStatus,
         hasPermission,
         hasPermissionUrl,
