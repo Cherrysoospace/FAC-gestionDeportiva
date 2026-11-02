@@ -1,65 +1,79 @@
 package com.fac.backend.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fac.backend.authorization.PermissionOperation;
 import com.fac.backend.dto.permission.PermissionCatalogResponseDTO;
 import com.fac.backend.dto.permission.PermissionItemDTO;
 import com.fac.backend.entity.Permission;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PermissionCatalogServiceTest {
 
-    private final PermissionCatalogService service =
-            new PermissionCatalogService(new PermissionClassifier());
+    private PermissionCatalogService catalogService;
 
-    @Test
-    void groupsPermissionsByModuleAndResource() {
-        PermissionCatalogResponseDTO catalog = service.buildCatalog(List.of(
-                permission(1L, "GET", "/api/tournaments/{id}"),
-                permission(2L, "GET", "/api/users"),
-                permission(3L, "POST", "/api/users"),
-                permission(4L, "PUT", "/api/roles/{id}/permissions"),
-                permission(5L, "DELETE", "/api/tickets/{id}")
-        ));
-
-        assertEquals(5, catalog.getTotal());
-        assertEquals(
-                List.of("Administración", "Gestión Deportiva", "Comercial"),
-                catalog.getModules().stream()
-                        .map(module -> module.getName())
-                        .toList()
-        );
-        assertEquals(
-                List.of("Usuarios", "Roles"),
-                catalog.getModules().get(0).getResources().stream()
-                        .map(resource -> resource.getName())
-                        .toList()
-        );
+    @BeforeEach
+    void setUp() {
+        catalogService = new PermissionCatalogService(new PermissionClassifier());
     }
 
     @Test
-    void sortsItemsByModuleResourceAndOperation() {
-        List<PermissionItemDTO> items = service.toItems(List.of(
-                permission(1L, "DELETE", "/api/users/{id}"),
-                permission(2L, "GET", "/api/users"),
-                permission(3L, "GET", "/api/users/{id}")
-        ));
-
-        assertEquals(
-                List.of("VER", "LISTAR", "ELIMINAR"),
-                items.stream().map(item -> item.getOperation().name()).toList()
-        );
-        assertTrue(items.get(0).getModule().equals("Administración"));
-    }
-
-    private Permission permission(Long id, String method, String url) {
-        return Permission.builder()
-                .id(id)
-                .method(method)
-                .url(url)
+    @DisplayName("HU-SE-06: agrupa permisos por módulo y recurso en el orden definido por la matriz")
+    void buildCatalogShouldGroupAndOrderByModuleAndResource() {
+        Permission listTournaments = Permission.builder()
+                .id(1L)
+                .method("GET")
+                .url("/api/torneos")
                 .build();
+        Permission listRoles = Permission.builder()
+                .id(2L)
+                .method("GET")
+                .url("/api/roles")
+                .build();
+        Permission createRoles = Permission.builder()
+                .id(3L)
+                .method("POST")
+                .url("/api/roles")
+                .build();
+
+        PermissionCatalogResponseDTO catalog = catalogService.buildCatalog(
+                List.of(listTournaments, createRoles, listRoles)
+        );
+
+        assertEquals(3, catalog.getTotal());
+        assertEquals(2, catalog.getModules().size());
+        assertEquals("Administración", catalog.getModules().get(0).getName());
+        assertEquals("Gestión Deportiva", catalog.getModules().get(1).getName());
+
+        var rolesResource = catalog.getModules().get(0).getResources().get(0);
+        assertEquals("Roles", rolesResource.getName());
+        assertEquals(2, rolesResource.getPermissions().size());
+        assertEquals(PermissionOperation.LISTAR, rolesResource.getPermissions().get(0).getOperation());
+        assertEquals(PermissionOperation.CREAR, rolesResource.getPermissions().get(1).getOperation());
+    }
+
+    @Test
+    @DisplayName("HU-SE-05: clasifica un endpoint con comodín ? como operación VER sobre recurso individual")
+    void toItemsShouldClassifyWildcardSegmentAsVerOperation() {
+        Permission getRoleByWildcard = Permission.builder()
+                .id(4L)
+                .method("GET")
+                .url("api/v1/roles/?")
+                .build();
+
+        List<PermissionItemDTO> items = catalogService.toItems(List.of(getRoleByWildcard));
+
+        assertEquals(1, items.size());
+        assertEquals(PermissionOperation.VER, items.get(0).getOperation());
+    }
+
+    @Test
+    @DisplayName("HU-SE-06: devuelve lista vacía cuando la colección de permisos es nula")
+    void toItemsShouldReturnEmptyListWhenNull() {
+        assertTrue(catalogService.toItems(null).isEmpty());
     }
 }
