@@ -32,8 +32,7 @@ public class RoleService {
         if (roleRepository.existsByNameIgnoreCase(dto.getName())) {
             throw new ApplicationException(
                     ErrorCase.ALREADY_EXISTS,
-                    "Ya existe un rol con ese nombre"
-            );
+                    "Ya existe un rol con ese nombre");
         }
 
         Role role = roleMapper.toEntity(dto);
@@ -55,48 +54,42 @@ public class RoleService {
         return roleMapper.toPermissionsResponseDTO(role);
     }
 
-    @CacheEvict(
-            cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
-            allEntries = true
-    )
+    @CacheEvict(cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE, allEntries = true)
     public RoleResponseDTO update(Long id, RoleRequestDTO dto) {
         Role role = findEntityById(id);
 
         if (roleRepository.existsByNameIgnoreCaseAndIdNot(dto.getName(), id)) {
             throw new ApplicationException(
                     ErrorCase.ALREADY_EXISTS,
-                    "Ya existe un rol con ese nombre"
-            );
+                    "Ya existe un rol con ese nombre");
         }
 
         roleMapper.updateEntity(dto, role);
         return roleMapper.toResponseDTO(roleRepository.save(role));
     }
 
-    @CacheEvict(
-            cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE,
-            allEntries = true
-    )
+    @CacheEvict(cacheNames = CacheConfig.EFFECTIVE_PERMISSIONS_CACHE, allEntries = true)
     @Transactional
     public void delete(Long id) {
         Role role = findEntityById(id);
         if (userRoleRepository.existsByRoleId(id)) {
             throw new ApplicationException(
                     ErrorCase.INVALID_OPERATION,
-                    "No se puede eliminar un rol que está asignado"
-            );
+                    "No se puede eliminar un rol que está asignado");
         }
-        // Solo se retiran las asociaciones: los permisos siguen en el sistema (HU-SE-03)
+        // Solo se retiran las asociaciones: los permisos siguen en el sistema
+        // (HU-SE-03)
         rolePermissionRepository.deleteAll(
-                rolePermissionRepository.findAllByRoleId(id)
-        );
+                rolePermissionRepository.findAllByRoleId(id));
         roleRepository.delete(role);
     }
 
     private Role findEntityById(Long id) {
         return roleRepository.findById(id)
                 .orElseThrow(() -> new ApplicationException(
-                    ErrorCase.NOT_FOUND, "Rol no encontrado"
-                ));
+                        ErrorCase.NOT_FOUND, "Rol no encontrado"));
     }
 }
+
+
+                        
