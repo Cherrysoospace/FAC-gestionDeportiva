@@ -866,11 +866,18 @@ function RolesContent() {
                                     }))
                                 }
                             />
-                            {formSubmitted && !formValues.name.trim() && (
-                                <small className="p-error">
-                                    Este campo es obligatorio
+                            <div className="flex justify-content-between">
+                                {formSubmitted && !formValues.name.trim() ? (
+                                    <small className="p-error">
+                                        Este campo es obligatorio
+                                    </small>
+                                ) : (
+                                    <span />
+                                )}
+                                <small className="text-500">
+                                    {formValues.name.length}/50
                                 </small>
-                            )}
+                            </div>
                         </div>
 
                         <div className="col-12 sm:col-5 flex flex-column gap-2">
