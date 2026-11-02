@@ -45,6 +45,10 @@ describe('normalizeEndpointUrl', () => {
     it('no modifica segmentos que no son ids', () => {
         expect(normalizeEndpointUrl('/api/users/me')).toBe('/api/users/me');
     });
+
+    it('reemplaza el comodín ? del Anexo 1 por el marcador {id}', () => {
+        expect(normalizeEndpointUrl('api/v1/roles/?')).toBe('api/v1/roles/{id}');
+    });
 });
 
 describe('permissionMatchesEndpoint', () => {
@@ -127,5 +131,18 @@ describe('hasEndpointRequirement', () => {
                 method: 'DELETE'
             })
         ).toBe(false);
+    });
+
+    it('permite coincidir un permiso registrado con comodín ? frente a {id}', () => {
+        const items = [
+            permission(3, '/api/roles/?', 'DELETE', 'Roles', 'ELIMINAR')
+        ];
+
+        expect(
+            hasEndpointRequirement(items, {
+                url: '/api/roles/{id}',
+                method: 'DELETE'
+            })
+        ).toBe(true);
     });
 });
