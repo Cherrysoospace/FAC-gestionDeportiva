@@ -50,6 +50,7 @@ public class RoleSummaryService {
                 userRoleRepository.countByRoleId(roleId),
                 assignedCount,
                 modules,
+                items,
                 totalAvailable,
                 Math.max(totalAvailable - assignedCount, 0)
         );

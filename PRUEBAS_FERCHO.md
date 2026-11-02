@@ -796,8 +796,9 @@ Para garantizar el cumplimiento del **100 %** de los criterios sin efectos colat
 ### HU-SE-06 · Criterio 3: Al seleccionar un rol, el sistema debe mostrar los permisos que tiene actualmente asignados.
 - **Estado:** ✅ cumple
 - **Implementación técnica:**
-  - **Backend:** `backend/src/main/java/com/fac/backend/controller/RoleController.java:57-65` (`GET /api/roles/{id}/permissions` y `GET /api/roles/{id}/summary`).
-  - **Frontend:** `frontend/app/(main)/roles/permisos/hooks/useRolePermissions.ts:59-85`.
+  - **Backend:** `backend/src/main/java/com/fac/backend/controller/RoleController.java:59-67` (`GET /api/roles/{id}/permissions` y `GET /api/roles/{id}/summary` que en `RoleSummaryService.java:35-56` devuelve también la lista detallada `permissions`).
+  - **Frontend (Vista de Roles `/roles` — Detalle del rol):** `frontend/app/(main)/roles/page.tsx:130-149, 681-740` carga y lista en la sección **Permisos actualmente asignados** cada permiso asignado al rol seleccionado con su operación, recurso, método HTTP (`GET`/`POST`/`PUT`/`DELETE`), URL y módulo.
+  - **Frontend (Matriz de Permisos `/roles/permisos`):** `frontend/app/(main)/roles/permisos/hooks/useRolePermissions.ts:59-85`.
   ```ts
   // useRolePermissions.ts:64-75
   const [assignmentData, summaryData] = await Promise.all([
@@ -808,13 +809,15 @@ Para garantizar el cumplimiento del **100 %** de los criterios sin efectos colat
   setSelectedIds(new Set(ids));
   setSavedIds(new Set(ids));
   ```
-- **Prueba paso a paso (para captura de pantalla):** En `/roles/permisos`, selecciona **`COORDINADOR`** en **Rol seleccionado** (o pulsa el botón **`Cargar permisos`**). Observa cómo la matriz marca automáticamente los **4 permisos** de `COORDINADOR` (`Listar` en `Torneos`, `Equipos`, `Jugadores` y `Partidos`) y el panel derecho **Resumen del rol** muestra **`Total permisos asignados: 4`**.
+- **Prueba paso a paso (para captura de pantalla):**
+  1. **Desde Gestión de Roles (`/roles`):** Haz clic sobre un rol en la tabla (p. ej. **`Secretaria`** o **`COORDINADOR`**). En el panel derecho **Detalle del rol**, debajo de **Módulos asociados**, se despliega la lista **Permisos actualmente asignados** mostrando cada permiso con su operación, recurso, etiqueta de método HTTP (`GET`, `POST`, etc.) y endpoint (`URL`).
+  2. **Desde Matriz de Permisos (`/roles/permisos`):** Selecciona **`COORDINADOR`** en **Rol seleccionado** (o pulsa **`Cargar permisos`**). Observa cómo la matriz marca automáticamente sus permisos asignados y el panel derecho **Resumen del rol** muestra el contador actualizado.
 - **Prueba alterna (si no se ve en la UI):**
   ```bash
   curl -s http://localhost:8181/api/roles/2/permissions -H "Authorization: Bearer <TOKEN_ADMIN>"
   # HTTP 200 OK -> {"roleId":2,"roleName":"COORDINADOR","permissionIds":[...],"totalAssigned":4,"totalAvailable":58}
   ```
-- **Qué debe mostrar la captura:** El rol `COORDINADOR` seleccionado con sus 4 checkboxes marcados en la matriz y `Asignados: 4` en el panel derecho.
+- **Qué debe mostrar la captura:** El rol seleccionado en `/roles` mostrando la sección **Permisos actualmente asignados** en el panel **Detalle del rol**, o en `/roles/permisos` con sus checkboxes marcados en la matriz.
 
 ---
 

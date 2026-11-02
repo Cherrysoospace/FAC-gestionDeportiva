@@ -56,6 +56,7 @@ export interface RoleAccessSummary {
     usersCount: number;
     assignedCount: number;
     modulesWithAccess: string[];
+    permissions?: PermissionItem[];
     totalAvailable: number;
     notAssigned: number;
 }

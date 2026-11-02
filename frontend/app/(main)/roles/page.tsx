@@ -23,6 +23,7 @@ import { describeError } from '@/lib/api-errors';
 import {
     createRole,
     deleteRole,
+    fetchRolePermissions,
     fetchRoles,
     fetchRoleSummary,
     updateRole
@@ -40,6 +41,24 @@ import {
     RoleFormValues,
     RoleSummary
 } from '@/types/security';
+
+function methodSeverity(
+    method: string
+): 'success' | 'info' | 'warning' | 'danger' {
+    switch (method.toUpperCase()) {
+        case 'GET':
+            return 'info';
+        case 'POST':
+            return 'success';
+        case 'PUT':
+        case 'PATCH':
+            return 'warning';
+        case 'DELETE':
+            return 'danger';
+        default:
+            return 'info';
+    }
+}
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
@@ -113,7 +132,16 @@ function RolesContent() {
         setSummaryLoading(true);
         try {
             const summary = await fetchRoleSummary(role.id);
-            setSelectedSummary(summary);
+            let permissions = summary.permissions;
+            if (!Array.isArray(permissions)) {
+                try {
+                    const assignment = await fetchRolePermissions(role.id);
+                    permissions = assignment.permissions;
+                } catch {
+                    permissions = [];
+                }
+            }
+            setSelectedSummary({ ...summary, permissions });
         } catch {
             setSelectedSummary(null);
         } finally {
@@ -648,6 +676,69 @@ function RolesContent() {
                                             </span>
                                         )}
                                     </div>
+                                </div>
+
+                                <div className="flex flex-column gap-2">
+                                    <div className="flex align-items-center justify-content-between gap-2">
+                                        <span className="text-900 font-semibold text-sm">
+                                            Permisos actualmente asignados
+                                        </span>
+                                        {!summaryLoading && (
+                                            <Tag
+                                                value={`${selectedSummary?.permissions?.length ?? 0}`}
+                                                severity="info"
+                                                rounded
+                                            />
+                                        )}
+                                    </div>
+                                    {summaryLoading ? (
+                                        <div className="flex flex-column gap-2">
+                                            <Skeleton height="2.5rem" />
+                                            <Skeleton height="2.5rem" />
+                                        </div>
+                                    ) : selectedSummary?.permissions &&
+                                      selectedSummary.permissions.length > 0 ? (
+                                        <div className="flex flex-column gap-2 max-h-16rem overflow-y-auto pr-1">
+                                            {selectedSummary.permissions.map(
+                                                (perm) => (
+                                                    <div
+                                                        key={perm.id}
+                                                        className="p-2 border-round surface-ground border-1 surface-border flex flex-column gap-1"
+                                                    >
+                                                        <div className="flex align-items-center justify-content-between gap-2">
+                                                            <span className="text-900 font-medium text-sm">
+                                                                {
+                                                                    perm.operationLabel
+                                                                }{' '}
+                                                                ·{' '}
+                                                                {perm.resource}
+                                                            </span>
+                                                            <Tag
+                                                                value={
+                                                                    perm.method
+                                                                }
+                                                                severity={methodSeverity(
+                                                                    perm.method
+                                                                )}
+                                                            />
+                                                        </div>
+                                                        <div className="flex align-items-center justify-content-between gap-2 text-xs text-600">
+                                                            <code className="text-700">
+                                                                {perm.url}
+                                                            </code>
+                                                            <span>
+                                                                {perm.module}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <span className="text-600 text-sm">
+                                            Sin permisos asignados actualmente
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 pt-2">

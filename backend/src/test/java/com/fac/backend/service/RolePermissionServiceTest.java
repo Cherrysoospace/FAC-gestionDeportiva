@@ -310,6 +310,7 @@ class RolePermissionServiceTest {
         assertEquals(5, summary.getTotalAvailable());
         assertEquals(3, summary.getNotAssigned());
         assertEquals(List.of("Administración"), summary.getModulesWithAccess());
+        assertEquals(2, summary.getPermissions().size());
     }
 
     private Role role(Long id, String name) {

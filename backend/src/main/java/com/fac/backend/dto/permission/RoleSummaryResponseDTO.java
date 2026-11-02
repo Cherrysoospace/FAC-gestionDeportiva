@@ -13,6 +13,7 @@ public class RoleSummaryResponseDTO {
     long usersCount;
     int assignedCount;
     List<String> modulesWithAccess;
+    List<PermissionItemDTO> permissions;
     int totalAvailable;
     int notAssigned;
 }
