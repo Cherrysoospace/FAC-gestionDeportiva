@@ -5,7 +5,7 @@ import { Avatar } from 'primereact/avatar';
 import { Menu } from 'primereact/menu';
 import { MenuItem } from 'primereact/menuitem';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { resolveApiUrl } from '@/lib/api';
+import AvatarPhoto from '@/components/ui/AvatarPhoto';
 import { getInitials } from '@/lib/format';
 import { useAuth } from './context/authcontext';
 
@@ -50,7 +50,7 @@ export default function TopbarUserMenu() {
                 title={`${name} · ${roleLabel}`}
             >
                 {showPhoto ? (
-                    <Avatar image={resolveApiUrl(photoUrl as string)} imageAlt={`Foto de ${name}`} onImageError={() => setPhotoFailed(true)} shape="circle" className="layout-topbar-user-avatar" />
+                    <AvatarPhoto photoUrl={photoUrl as string} alt={`Foto de ${name}`} onError={() => setPhotoFailed(true)} className="layout-topbar-user-avatar" />
                 ) : (
                     <Avatar label={getInitials(name)} shape="circle" className="layout-topbar-user-avatar layout-topbar-user-initials" aria-hidden="true" />
                 )}

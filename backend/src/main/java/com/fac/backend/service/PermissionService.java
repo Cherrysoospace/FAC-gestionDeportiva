@@ -60,6 +60,25 @@ public class PermissionService {
     }
 
     @Transactional(readOnly = true)
+    public boolean hasPermission(
+            Long userId,
+            String httpMethod,
+            String requestUrl) {
+
+        String normalizedUrl = PermissionMatcher.normalizeUrl(requestUrl);
+
+        return permissionRepository
+                .findByUserIdAndMethodAndUrl(
+                        userId,
+                        httpMethod.toUpperCase(Locale.ROOT),
+                        normalizedUrl
+                )
+                .stream()
+                .findAny()
+                .isPresent();
+    }
+
+    @Transactional(readOnly = true)
     public PermissionResponseDTO findById(Long id) {
         return permissionMapper.toResponseDTO(findPermission(id));
     }

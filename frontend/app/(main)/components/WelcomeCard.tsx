@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Avatar } from 'primereact/avatar';
 import { Skeleton } from 'primereact/skeleton';
 import { Tag } from 'primereact/tag';
-import { resolveApiUrl } from '@/lib/api';
+import AvatarPhoto from '@/components/ui/AvatarPhoto';
 import { getInitials } from '@/lib/format';
 import { RoleSummary } from '@/types/security';
 import styles from '../home.module.scss';
@@ -39,7 +39,7 @@ export default function WelcomeCard({ greeting, userName, email, roles, photoUrl
     return (
         <section className={`card ${styles.welcome}`} aria-labelledby="welcome-title">
             {showPhoto ? (
-                <Avatar image={resolveApiUrl(photoUrl as string)} imageAlt={`Foto de ${userName}`} onImageError={() => setPhotoFailed(true)} shape="circle" size="xlarge" className={styles.welcomeAvatar} />
+                <AvatarPhoto photoUrl={photoUrl as string} alt={`Foto de ${userName}`} onError={() => setPhotoFailed(true)} size="xlarge" className={styles.welcomeAvatar} />
             ) : (
                 <Avatar label={getInitials(userName)} shape="circle" size="xlarge" className={styles.welcomeAvatar} aria-hidden="true" />
             )}

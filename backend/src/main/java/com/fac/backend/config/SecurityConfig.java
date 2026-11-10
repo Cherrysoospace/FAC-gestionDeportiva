@@ -65,6 +65,11 @@ public class SecurityConfig {
                                 "/api/auth/2fa/cancel"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/profile/photos/*").permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/internal/security/permissions-validation"
+                        )
+                        .authenticated()
                         .anyRequest()
                         .access(dynamicAuthorizationManager)
                 )
