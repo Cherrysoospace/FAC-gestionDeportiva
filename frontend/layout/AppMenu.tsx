@@ -19,6 +19,7 @@ const AppMenu = () => {
         APP_MODULES.filter((module) => module.section === section).map((module) => toMenuItem(module, canAccessModule(module, hasPermissionUrl)));
 
     const securityItems = sectionItems('Seguridad');
+    const sportsItems = sectionItems('Gestión deportiva');
     const accountItems = sectionItems('Cuenta');
 
     const model: AppMenuItem[] = [
@@ -30,6 +31,11 @@ const AppMenu = () => {
             label: 'Seguridad',
             visible: securityItems.some((item) => item.visible),
             items: securityItems
+        },
+        {
+            label: 'Gestión deportiva',
+            visible: sportsItems.some((item) => item.visible),
+            items: sportsItems
         },
         {
             label: 'Mi cuenta',

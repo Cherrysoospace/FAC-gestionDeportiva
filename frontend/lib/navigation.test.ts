@@ -19,4 +19,11 @@ describe('getAllowedModules', () => {
 
         expect(allowed.map((module) => module.to)).not.toContain('/roles/permisos');
     });
+
+    it('muestra Torneos con el permiso GET de ms-sports', () => {
+        const allowed = getAllowedModules((url, method) => url === '/gestion-deportiva/tournaments' && method === 'GET');
+
+        expect(allowed.map((module) => module.to)).toEqual(['/torneos', '/perfil']);
+        expect(allowed.find((module) => module.to === '/torneos')?.section).toBe('Gestión deportiva');
+    });
 });

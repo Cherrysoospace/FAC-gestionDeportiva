@@ -31,6 +31,8 @@ export class ApiRequestError extends Error {
 
 export interface ApiFetchOptions extends RequestInit {
     publicRequest?: boolean;
+    /** Base de otro microservicio (ej. ms-sports). Por defecto, NEXT_PUBLIC_API_URL. */
+    baseUrl?: string;
 }
 
 // Las rutas relativas del backend (ej. /api/profile/photos/x.png) se completan
@@ -50,6 +52,7 @@ export async function apiFetch<T>(
     const {
         publicRequest = isPublicPath(path),
         headers: optionHeaders,
+        baseUrl,
         ...requestOptions
     } = options;
 
@@ -76,7 +79,7 @@ export async function apiFetch<T>(
     let response: Response;
 
     try {
-        response = await fetch(`${API_URL}${path}`, {
+        response = await fetch(`${baseUrl ?? API_URL}${path}`, {
             ...requestOptions,
             headers
         });

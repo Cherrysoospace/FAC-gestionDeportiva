@@ -11,7 +11,7 @@ export interface AppModule {
     description: string;
     icon: string;
     to: string;
-    section: 'Seguridad' | 'Cuenta';
+    section: 'Seguridad' | 'Gestión deportiva' | 'Cuenta';
     /** Endpoints que el usuario debe tener todos para ver el módulo. Vacío = cualquier usuario autenticado. */
     requiredEndpoints: EndpointRequirement[];
 }
@@ -48,6 +48,15 @@ export const APP_MODULES: AppModule[] = [
         to: '/permisos',
         section: 'Seguridad',
         requiredEndpoints: PERMISSIONS_VIEW_ENDPOINTS
+    },
+    {
+        label: 'Torneos',
+        description: 'Crea torneos y gestiona sus fases e inscripciones.',
+        icon: 'pi-trophy',
+        to: '/torneos',
+        section: 'Gestión deportiva',
+        // Permiso de ms-sports, registrado en ms_security con el prefijo /gestion-deportiva
+        requiredEndpoints: [{ url: '/gestion-deportiva/tournaments', method: 'GET' }]
     },
     {
         label: 'Mi perfil',
