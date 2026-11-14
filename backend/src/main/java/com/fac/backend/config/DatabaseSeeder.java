@@ -28,6 +28,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class DatabaseSeeder {
 
+    private static final String SPORTS_MODULE = "Gestión Deportiva";
+
     private static final List<PermissionSeed> ADMIN_PERMISSIONS = List.of(
             // Administración - Usuarios
             new PermissionSeed("GET", "/api/users"),
@@ -104,6 +106,16 @@ public class DatabaseSeeder {
             new PermissionSeed("POST", "/api/escenarios"),
             new PermissionSeed("PUT", "/api/escenarios/{id}"),
             new PermissionSeed("DELETE", "/api/escenarios/{id}"),
+            // Gestión Deportiva - microservicio ms-sports (prefijo /gestion-deportiva).
+            // El módulo y el recurso van explícitos: PermissionClassifier solo
+            // deduce los de URL que empiezan con /api/.
+            new PermissionSeed("GET", "/gestion-deportiva/tournaments", SPORTS_MODULE, "Torneos"),
+            new PermissionSeed("GET", "/gestion-deportiva/tournaments/{id}", SPORTS_MODULE, "Torneos"),
+            new PermissionSeed("POST", "/gestion-deportiva/tournaments", SPORTS_MODULE, "Torneos"),
+            new PermissionSeed("PATCH", "/gestion-deportiva/tournaments/{id}", SPORTS_MODULE, "Torneos"),
+            new PermissionSeed("DELETE", "/gestion-deportiva/tournaments/{id}", SPORTS_MODULE, "Torneos"),
+            // Selector de deporte del formulario de torneos
+            new PermissionSeed("GET", "/gestion-deportiva/sports", SPORTS_MODULE, "Deportes"),
             // Reportes
             new PermissionSeed("GET", "/api/reportes"),
             new PermissionSeed("GET", "/api/reportes/{id}"),
@@ -184,6 +196,8 @@ public class DatabaseSeeder {
                     .map(seed -> Permission.builder()
                             .method(seed.method())
                             .url(seed.url())
+                            .module(seed.module())
+                            .resource(seed.resource())
                             .build())
                     .toList();
 
@@ -270,7 +284,12 @@ public class DatabaseSeeder {
         }
     }
 
-    private record PermissionSeed(String method, String url) {
+    // module y resource en null = los deduce PermissionMetadataBackfill a partir de la URL
+    private record PermissionSeed(String method, String url, String module, String resource) {
+        PermissionSeed(String method, String url) {
+            this(method, url, null, null);
+        }
+
         String key() {
             return permissionKey(method, url);
         }
