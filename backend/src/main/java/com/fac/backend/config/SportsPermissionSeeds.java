@@ -55,8 +55,15 @@ final class SportsPermissionSeeds {
                     patch("/registrations" + ID + "/withdraw", "Inscripciones")
             ),
             association("/tournament-venues", "Escenarios de torneos"),
-            // HU-GD-02 y 03
-            crud("/teams", "Equipos"),
+            // HU-GD-02 y 03 (más la autorrelación Equipo n — n Equipo del diagrama)
+            concat(
+                    crud("/teams", "Equipos"),
+                    List.of(
+                            get("/teams" + ID + "/related-teams", "Equipos"),
+                            post("/teams" + ID + "/related-teams", "Equipos"),
+                            delete("/teams" + ID + "/related-teams" + ID, "Equipos")
+                    )
+            ),
             association("/team-sports", "Deportes de equipos"),
             // HU-GD-04 y 08 (perfil del jugador)
             concat(
@@ -68,11 +75,15 @@ final class SportsPermissionSeeds {
                     get("/team-players", "Plantillas"),
                     get("/team-players" + ID, "Plantillas"),
                     post("/team-players", "Plantillas"),
+                    patch("/team-players" + ID, "Plantillas"),
                     patch("/team-players" + ID + "/release", "Plantillas")
             ),
-            // HU-GD-06 y 07
+            // HU-GD-06 y 07 (el PATCH de la asociación cambia el nivel)
             crud("/skills", "Habilidades"),
-            association("/player-skills", "Habilidades de jugadores"),
+            concat(
+                    association("/player-skills", "Habilidades de jugadores"),
+                    List.of(patch("/player-skills" + ID, "Habilidades de jugadores"))
+            ),
             // Escenarios jerárquicos y sus localidades
             crud("/venues", "Escenarios"),
             crud("/locations", "Localidades")

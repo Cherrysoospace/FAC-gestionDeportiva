@@ -44,6 +44,12 @@ class SportsPermissionSeedsTest {
                 "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/registrations/7/withdraw")));
         assertTrue(containsKey(SportsPermissionSeeds.ALL,
                 "GET " + PermissionMatcher.normalizeUrl("/gestion-deportiva/players/12/profile")));
+        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+                "DELETE " + PermissionMatcher.normalizeUrl("/gestion-deportiva/teams/4/related-teams/9")));
+        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+                "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/team-players/3")));
+        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+                "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/player-skills/8")));
     }
 
     @Test
