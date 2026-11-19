@@ -12,11 +12,11 @@ import com.fac.backend.repository.UserRepository;
 import com.fac.backend.repository.UserRoleRepository;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -28,9 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class DatabaseSeeder {
 
-    private static final String SPORTS_MODULE = "Gestión Deportiva";
-
-    private static final List<PermissionSeed> ADMIN_PERMISSIONS = List.of(
+    private static final List<PermissionSeed> PLATFORM_PERMISSIONS = List.of(
             // Administración - Usuarios
             new PermissionSeed("GET", "/api/users"),
             new PermissionSeed("POST", "/api/users"),
@@ -106,16 +104,6 @@ public class DatabaseSeeder {
             new PermissionSeed("POST", "/api/escenarios"),
             new PermissionSeed("PUT", "/api/escenarios/{id}"),
             new PermissionSeed("DELETE", "/api/escenarios/{id}"),
-            // Gestión Deportiva - microservicio ms-sports (prefijo /gestion-deportiva).
-            // El módulo y el recurso van explícitos: PermissionClassifier solo
-            // deduce los de URL que empiezan con /api/.
-            new PermissionSeed("GET", "/gestion-deportiva/tournaments", SPORTS_MODULE, "Torneos"),
-            new PermissionSeed("GET", "/gestion-deportiva/tournaments/{id}", SPORTS_MODULE, "Torneos"),
-            new PermissionSeed("POST", "/gestion-deportiva/tournaments", SPORTS_MODULE, "Torneos"),
-            new PermissionSeed("PATCH", "/gestion-deportiva/tournaments/{id}", SPORTS_MODULE, "Torneos"),
-            new PermissionSeed("DELETE", "/gestion-deportiva/tournaments/{id}", SPORTS_MODULE, "Torneos"),
-            // Selector de deporte del formulario de torneos
-            new PermissionSeed("GET", "/gestion-deportiva/sports", SPORTS_MODULE, "Deportes"),
             // Reportes
             new PermissionSeed("GET", "/api/reportes"),
             new PermissionSeed("GET", "/api/reportes/{id}"),
@@ -127,6 +115,12 @@ public class DatabaseSeeder {
             new PermissionSeed("GET", "/api/users/{id}/sessions/{id}"),
             new PermissionSeed("DELETE", "/api/users/{id}/sessions/{id}")
     );
+
+    // El administrador general también tiene todo lo del microservicio ms-sports
+    private static final List<PermissionSeed> ADMIN_PERMISSIONS = Stream.concat(
+            PLATFORM_PERMISSIONS.stream(),
+            SportsPermissionSeeds.ALL.stream()
+    ).toList();
 
     private static final List<PermissionSeed> COORDINATOR_PERMISSIONS = List.of(
             new PermissionSeed("GET", "/api/torneos"),
@@ -174,9 +168,13 @@ public class DatabaseSeeder {
                     "JUEZ DEPORTIVO",
                     "Registro de resultados y acontecimientos de partidos"
             );
-            findOrCreateRole(
+            Role fanRole = findOrCreateRole(
                     "AFICIONADO",
                     "Usuario aficionado con permisos básicos (rol por defecto)"
+            );
+            Role sportsAdminRole = findOrCreateRole(
+                    "ADMINISTRADOR DEPORTIVO",
+                    "Gestiona deportes, equipos, jugadores, escenarios y competencias"
             );
 
             User adminUser = findOrCreateUser();
@@ -186,7 +184,7 @@ public class DatabaseSeeder {
             Map<String, Permission> permissionsByKey = permissionRepository.findAll()
                     .stream()
                     .collect(Collectors.toMap(
-                            p -> permissionKey(p.getMethod(), p.getUrl()),
+                            p -> PermissionSeed.keyOf(p.getMethod(), p.getUrl()),
                             Function.identity(),
                             (first, second) -> first
                     ));
@@ -204,7 +202,7 @@ public class DatabaseSeeder {
             if (!missingPermissions.isEmpty()) {
                 permissionRepository.saveAll(missingPermissions).forEach(
                         saved -> permissionsByKey.put(
-                                permissionKey(saved.getMethod(), saved.getUrl()),
+                                PermissionSeed.keyOf(saved.getMethod(), saved.getUrl()),
                                 saved
                         )
                 );
@@ -213,6 +211,8 @@ public class DatabaseSeeder {
             assignPermissionsInBatch(adminRole, ADMIN_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(coordinatorRole, COORDINATOR_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(consultantRole, CONSULTANT_PERMISSIONS, permissionsByKey);
+            assignPermissionsInBatch(sportsAdminRole, SportsPermissionSeeds.ALL, permissionsByKey);
+            assignPermissionsInBatch(fanRole, SportsPermissionSeeds.FAN_READ_ONLY, permissionsByKey);
 
             // Migración de datos aparte: completa módulo y recurso de permisos viejos
             permissionMetadataBackfill.run();
@@ -249,10 +249,6 @@ public class DatabaseSeeder {
         }
     }
 
-    private static String permissionKey(String method, String url) {
-        return method.toUpperCase(Locale.ROOT) + " " + url;
-    }
-
     private Role findOrCreateRole(String name, String description) {
         return roleRepository.findByNameIgnoreCase(name)
                 .orElseGet(() -> {
@@ -281,17 +277,6 @@ public class DatabaseSeeder {
             userRole.setUser(user);
             userRole.setRole(role);
             userRoleRepository.save(userRole);
-        }
-    }
-
-    // module y resource en null = los deduce PermissionMetadataBackfill a partir de la URL
-    private record PermissionSeed(String method, String url, String module, String resource) {
-        PermissionSeed(String method, String url) {
-            this(method, url, null, null);
-        }
-
-        String key() {
-            return permissionKey(method, url);
         }
     }
 }
