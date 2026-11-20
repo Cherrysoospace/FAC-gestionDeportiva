@@ -176,6 +176,10 @@ public class DatabaseSeeder {
                     "ADMINISTRADOR DEPORTIVO",
                     "Gestiona deportes, equipos, jugadores, escenarios y competencias"
             );
+            Role simulatorRole = findOrCreateRole(
+                    "SIMULADOR DE POSICIONES",
+                    "Usuario de servicio del script que registra posiciones de la pizarra"
+            );
 
             User adminUser = findOrCreateUser();
             assignRole(adminUser, adminRole);
@@ -213,6 +217,7 @@ public class DatabaseSeeder {
             assignPermissionsInBatch(consultantRole, CONSULTANT_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(sportsAdminRole, SportsPermissionSeeds.ALL, permissionsByKey);
             assignPermissionsInBatch(fanRole, SportsPermissionSeeds.FAN_READ_ONLY, permissionsByKey);
+            assignPermissionsInBatch(simulatorRole, SportsPermissionSeeds.POSITION_SIMULATOR, permissionsByKey);
 
             // Migración de datos aparte: completa módulo y recurso de permisos viejos
             permissionMetadataBackfill.run();

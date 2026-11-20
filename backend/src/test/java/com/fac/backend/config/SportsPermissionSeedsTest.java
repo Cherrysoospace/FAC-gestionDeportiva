@@ -68,6 +68,16 @@ class SportsPermissionSeedsTest {
         assertFalse(containsKey(SportsPermissionSeeds.FAN_READ_ONLY, "GET /gestion-deportiva/registrations"));
     }
 
+    @Test
+    void simulatorOnlyReadsMatchAndRecordsPositions() {
+        assertTrue(SportsPermissionSeeds.ALL.containsAll(SportsPermissionSeeds.POSITION_SIMULATOR));
+        assertTrue(containsKey(SportsPermissionSeeds.POSITION_SIMULATOR, "POST /gestion-deportiva/match-positions"));
+        assertFalse(SportsPermissionSeeds.POSITION_SIMULATOR.stream()
+                .anyMatch(seed -> seed.url().equals("/gestion-deportiva/matches") && !"GET".equals(seed.method())));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_READ_ONLY, "GET /gestion-deportiva/match-positions"));
+        assertFalse(containsKey(SportsPermissionSeeds.FAN_READ_ONLY, "POST /gestion-deportiva/match-positions"));
+    }
+
     private static boolean containsKey(List<PermissionSeed> seeds, String key) {
         return seeds.stream().anyMatch(seed -> seed.key().equals(key));
     }

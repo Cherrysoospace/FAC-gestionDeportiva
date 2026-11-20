@@ -30,7 +30,10 @@ final class SportsPermissionSeeds {
             "Equipos",
             "Jugadores",
             "Escenarios",
-            "Localidades"
+            "Localidades",
+            // HU-GC-09: la pizarra es para el administrador deportivo y el hincha
+            "Partidos",
+            "Posiciones"
     );
 
     private static final List<List<PermissionSeed>> RESOURCES = List.of(
@@ -86,7 +89,25 @@ final class SportsPermissionSeeds {
             ),
             // Escenarios jerárquicos y sus localidades
             crud("/venues", "Escenarios"),
-            crud("/locations", "Localidades")
+            crud("/locations", "Localidades"),
+            // HU-GC-06 (el PATCH también inicia o cancela el partido)
+            crud("/matches", "Partidos"),
+            // HU-GC-09: GET = pizarra; POST = una "foto" del campo (simulador)
+            List.of(
+                    get("/match-positions", "Posiciones"),
+                    post("/match-positions", "Posiciones")
+            )
+    );
+
+    /**
+     * Usuario de servicio del script simulador de posiciones: solo lee el
+     * partido y su plantilla y registra posiciones. Nada más.
+     */
+    static final List<PermissionSeed> POSITION_SIMULATOR = List.of(
+            get("/matches" + ID, "Partidos"),
+            get("/team-players", "Plantillas"),
+            get("/match-positions", "Posiciones"),
+            post("/match-positions", "Posiciones")
     );
 
     /** Todos los permisos de ms-sports: los recibe el Administrador deportivo. */
