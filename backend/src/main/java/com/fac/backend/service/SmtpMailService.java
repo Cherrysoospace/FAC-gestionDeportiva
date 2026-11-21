@@ -83,8 +83,7 @@ public class SmtpMailService implements MailService {
                     "No se pudo enviar el correo '{}' a {} destinatario(s)",
                     subject,
                     recipients.size(),
-                    exception
-            );
+                    exception);
         }
     }
 }
