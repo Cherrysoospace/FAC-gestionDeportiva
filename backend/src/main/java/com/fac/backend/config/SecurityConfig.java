@@ -67,7 +67,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/profile/photos/*").permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/internal/security/permissions-validation"
+                                "/api/internal/security/permissions-validation",
+                                "/api/internal/notifications/email"
                         )
                         .authenticated()
                         .anyRequest()

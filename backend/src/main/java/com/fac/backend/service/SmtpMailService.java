@@ -1,5 +1,6 @@
 package com.fac.backend.service;
 
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,41 @@ public class SmtpMailService implements MailService {
             logger.info("Correo '{}' enviado a {}", subject, to);
         } catch (MailException exception) {
             logger.error("No se pudo enviar el correo '{}' a {}", subject, to, exception);
+        }
+    }
+
+    @Async
+    @Override
+    public void sendBcc(List<String> recipients, String subject, String body) {
+        if (recipients == null || recipients.isEmpty()) {
+            return;
+        }
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        if (recipients.size() == 1) {
+            message.setTo(recipients.get(0));
+        } else {
+            message.setTo(from);
+            message.setBcc(recipients.toArray(String[]::new));
+        }
+        message.setSubject(subject);
+        message.setText(body);
+
+        try {
+            mailSender.send(message);
+            if (recipients.size() == 1) {
+                logger.info("Correo '{}' enviado a {}", subject, recipients.get(0));
+            } else {
+                logger.info("Correo '{}' enviado por CCO a {} destinatario(s)", subject, recipients.size());
+            }
+        } catch (MailException exception) {
+            logger.error(
+                    "No se pudo enviar el correo '{}' a {} destinatario(s)",
+                    subject,
+                    recipients.size(),
+                    exception
+            );
         }
     }
 }
