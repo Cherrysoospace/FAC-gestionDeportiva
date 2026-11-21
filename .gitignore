@@ -4,3 +4,4 @@
 # Volcados de la JVM cuando se queda sin memoria o falla
 hs_err_pid*
 replay_pid*
+backend/env
