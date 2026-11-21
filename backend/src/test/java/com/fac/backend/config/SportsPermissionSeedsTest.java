@@ -50,6 +50,14 @@ class SportsPermissionSeedsTest {
                 "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/team-players/3")));
         assertTrue(containsKey(SportsPermissionSeeds.ALL,
                 "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/player-skills/8")));
+        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+                "PUT " + PermissionMatcher.normalizeUrl("/gestion-deportiva/matches/9/result")));
+        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+                "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/bets/14/void")));
+        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+                "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/me/bets/14/cancel")));
+        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+                "DELETE " + PermissionMatcher.normalizeUrl("/gestion-deportiva/me/favorite-teams/6")));
     }
 
     @Test
@@ -58,6 +66,33 @@ class SportsPermissionSeedsTest {
         assertTrue(SportsPermissionSeeds.FAN_READ_ONLY.stream()
                 .allMatch(seed -> "GET".equals(seed.method())));
         assertTrue(SportsPermissionSeeds.ALL.containsAll(SportsPermissionSeeds.FAN_READ_ONLY));
+    }
+
+    @Test
+    void fanPermissionsIncludeSelfServiceAndPublicQueriesWithoutAdminWrites() {
+        assertTrue(SportsPermissionSeeds.ALL.containsAll(SportsPermissionSeeds.FAN_PERMISSIONS));
+        assertTrue(SportsPermissionSeeds.FAN_PERMISSIONS.containsAll(SportsPermissionSeeds.FAN_SELF_SERVICE));
+
+        Set<String> keys = new HashSet<>();
+        SportsPermissionSeeds.FAN_PERMISSIONS.forEach(seed ->
+                assertTrue(keys.add(seed.key()), "Permiso repetido para aficionado: " + seed.key()));
+
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "GET /gestion-deportiva/goals"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "GET /gestion-deportiva/payment-methods"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "GET /gestion-deportiva/tickets/availability"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "GET /gestion-deportiva/bets/available-matches"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "POST /gestion-deportiva/me/fan"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "POST /gestion-deportiva/me/favorite-teams"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "POST /gestion-deportiva/me/payment-methods"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "POST /gestion-deportiva/me/tickets"));
+        assertTrue(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "PATCH /gestion-deportiva/me/bets/{id}/cancel"));
+
+        assertFalse(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "GET /gestion-deportiva/fans"));
+        assertFalse(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "GET /gestion-deportiva/tickets"));
+        assertFalse(containsKey(SportsPermissionSeeds.FAN_PERMISSIONS, "GET /gestion-deportiva/bets"));
+        assertTrue(SportsPermissionSeeds.FAN_PERMISSIONS.stream()
+                .filter(seed -> !"GET".equals(seed.method()))
+                .allMatch(seed -> seed.url().startsWith("/gestion-deportiva/me/")));
     }
 
     @Test

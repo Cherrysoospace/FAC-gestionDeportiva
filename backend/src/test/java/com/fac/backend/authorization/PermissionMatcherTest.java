@@ -61,6 +61,43 @@ class PermissionMatcherTest {
     }
 
     @Test
+    void matchesPutAndPatchRoutesWithFixedSuffixAfterDynamicId() {
+        Permission matchResult = Permission.builder()
+                .id(10L)
+                .method("PUT")
+                .url("/gestion-deportiva/matches/{id}/result")
+                .build();
+        Permission voidBet = Permission.builder()
+                .id(11L)
+                .method("PATCH")
+                .url("/gestion-deportiva/bets/{id}/void")
+                .build();
+        Permission cancelMyBet = Permission.builder()
+                .id(12L)
+                .method("PATCH")
+                .url("/gestion-deportiva/me/bets/{id}/cancel")
+                .build();
+
+        assertEquals(
+                "/gestion-deportiva/matches/{id}/result",
+                PermissionMatcher.normalizeUrl("/gestion-deportiva/matches/15/result")
+        );
+        assertEquals(
+                "/gestion-deportiva/bets/{id}/void",
+                PermissionMatcher.normalizeUrl("/gestion-deportiva/bets/42/void")
+        );
+        assertEquals(
+                "/gestion-deportiva/me/bets/{id}/cancel",
+                PermissionMatcher.normalizeUrl("/gestion-deportiva/me/bets/42/cancel")
+        );
+
+        assertTrue(PermissionMatcher.matches(matchResult, "PUT", "/gestion-deportiva/matches/15/result"));
+        assertTrue(PermissionMatcher.matches(voidBet, "PATCH", "/gestion-deportiva/bets/42/void"));
+        assertTrue(PermissionMatcher.matches(cancelMyBet, "patch", "/gestion-deportiva/me/bets/42/cancel/"));
+        assertFalse(PermissionMatcher.matches(matchResult, "PATCH", "/gestion-deportiva/matches/15/result"));
+    }
+
+    @Test
     void handlesNullInputsSafely() {
         Permission permission = Permission.builder()
                 .id(1L)

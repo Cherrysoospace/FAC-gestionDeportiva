@@ -216,7 +216,7 @@ public class DatabaseSeeder {
             assignPermissionsInBatch(coordinatorRole, COORDINATOR_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(consultantRole, CONSULTANT_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(sportsAdminRole, SportsPermissionSeeds.ALL, permissionsByKey);
-            assignPermissionsInBatch(fanRole, SportsPermissionSeeds.FAN_READ_ONLY, permissionsByKey);
+            assignPermissionsInBatch(fanRole, SportsPermissionSeeds.FAN_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(simulatorRole, SportsPermissionSeeds.POSITION_SIMULATOR, permissionsByKey);
 
             // Migración de datos aparte: completa módulo y recurso de permisos viejos

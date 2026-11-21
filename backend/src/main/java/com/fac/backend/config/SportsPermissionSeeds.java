@@ -33,8 +33,40 @@ final class SportsPermissionSeeds {
             "Localidades",
             // HU-GC-09: la pizarra es para el administrador deportivo y el hincha
             "Partidos",
-            "Posiciones"
+            "Anotaciones",
+            "Posiciones",
+            // HU-GC-10: el hincha consulta el catálogo de métodos de pago al armar su billetera
+            "Métodos de pago"
     );
+
+    /** Rutas de disponibilidad pública que el aficionado consulta sin listar todos los registros. */
+    private static final Set<String> FAN_EXTRA_READABLE_PATHS = Set.of(
+            PREFIX + "/tickets/availability",
+            PREFIX + "/bets/available-matches"
+    );
+
+    /** Rutas de autogestión del aficionado autenticado (/me/...). */
+    static final List<PermissionSeed> FAN_SELF_SERVICE = Stream.of(
+            List.of(
+                    get("/me/fan", "Mi perfil de aficionado"),
+                    post("/me/fan", "Mi perfil de aficionado"),
+                    patch("/me/fan", "Mi perfil de aficionado")
+            ),
+            List.of(
+                    get("/me/favorite-teams", "Equipos favoritos"),
+                    post("/me/favorite-teams", "Equipos favoritos"),
+                    delete("/me/favorite-teams" + ID, "Equipos favoritos")
+            ),
+            crud("/me/payment-methods", "Mis métodos de pago"),
+            association("/me/tickets", "Mis boletos"),
+            List.of(
+                    get("/me/bets", "Mis apuestas"),
+                    get("/me/bets" + ID, "Mis apuestas"),
+                    post("/me/bets", "Mis apuestas"),
+                    patch("/me/bets" + ID, "Mis apuestas"),
+                    patch("/me/bets" + ID + "/cancel", "Mis apuestas")
+            )
+    ).flatMap(List::stream).toList();
 
     private static final List<List<PermissionSeed>> RESOURCES = List.of(
             // HU-GD-01 y catálogo de pelotas
@@ -90,13 +122,36 @@ final class SportsPermissionSeeds {
             // Escenarios jerárquicos y sus localidades
             crud("/venues", "Escenarios"),
             crud("/locations", "Localidades"),
-            // HU-GC-06 (el PATCH también inicia o cancela el partido)
-            crud("/matches", "Partidos"),
+            // HU-GC-06 y HU-GC-07 (el PATCH inicia/cancela; PUT /result registra el marcador final)
+            concat(
+                    crud("/matches", "Partidos"),
+                    List.of(put("/matches" + ID + "/result", "Partidos"))
+            ),
+            // HU-GC-07: anotaciones del partido
+            crud("/goals", "Anotaciones"),
             // HU-GC-09: GET = pizarra; POST = una "foto" del campo (simulador)
             List.of(
                     get("/match-positions", "Posiciones"),
                     post("/match-positions", "Posiciones")
-            )
+            ),
+            // Aficionados, métodos de pago, boletos y apuestas (Fercho)
+            crud("/fans", "Aficionados"),
+            crud("/payment-methods", "Métodos de pago"),
+            List.of(
+                    get("/tickets/availability", "Boletos"),
+                    get("/tickets", "Boletos"),
+                    get("/tickets" + ID, "Boletos"),
+                    post("/tickets", "Boletos"),
+                    delete("/tickets" + ID, "Boletos")
+            ),
+            List.of(
+                    get("/bets/available-matches", "Apuestas"),
+                    get("/bets", "Apuestas"),
+                    get("/bets" + ID, "Apuestas"),
+                    post("/bets", "Apuestas"),
+                    patch("/bets" + ID + "/void", "Apuestas")
+            ),
+            FAN_SELF_SERVICE
     );
 
     /**
@@ -118,8 +173,12 @@ final class SportsPermissionSeeds {
     /** Consultas permitidas al aficionado: nunca escribe en rutas de administración. */
     static final List<PermissionSeed> FAN_READ_ONLY = ALL.stream()
             .filter(seed -> "GET".equals(seed.method()))
-            .filter(seed -> FAN_READABLE_RESOURCES.contains(seed.resource()))
+            .filter(seed -> FAN_READABLE_RESOURCES.contains(seed.resource())
+                    || FAN_EXTRA_READABLE_PATHS.contains(seed.url()))
             .toList();
+
+    /** Permisos completos del rol AFICIONADO: lectura deportiva + autogestión /me/... */
+    static final List<PermissionSeed> FAN_PERMISSIONS = concat(FAN_READ_ONLY, FAN_SELF_SERVICE);
 
     private SportsPermissionSeeds() {
     }
@@ -157,6 +216,10 @@ final class SportsPermissionSeeds {
 
     private static PermissionSeed post(String path, String resource) {
         return seed("POST", path, resource);
+    }
+
+    private static PermissionSeed put(String path, String resource) {
+        return seed("PUT", path, resource);
     }
 
     private static PermissionSeed patch(String path, String resource) {
