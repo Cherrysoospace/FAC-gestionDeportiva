@@ -3,7 +3,7 @@
 # application.properties NO se sube a git; este .example sí.
 
 spring.application.name=backend
-server.port=8080
+server.port=${SERVER_PORT:8181}
 
 # Secretos locales (credenciales de correo, etc.) en backend/.env, que no se sube a git.
 # Ver .env.example. Las variables de entorno del sistema tienen prioridad.
