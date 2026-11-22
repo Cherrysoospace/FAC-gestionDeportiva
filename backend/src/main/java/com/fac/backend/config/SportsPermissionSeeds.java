@@ -74,6 +74,9 @@ final class SportsPermissionSeeds {
             crud("/balls", "Pelotas"),
             // HU-GC-01, 03, 04, 05 y 08 (inscripciones)
             crud("/tournaments", "Torneos"),
+            // HU-GC-08 (desarrollo del torneo): recurso propio para que el aficionado
+            // NO lo reciba con los GET de "Torneos"; es solo del administrador deportivo
+            List.of(get("/tournaments" + ID + "/development", "Desarrollo de torneos")),
             concat(
                     crud("/group-phases", "Fases de grupos"),
                     List.of(
