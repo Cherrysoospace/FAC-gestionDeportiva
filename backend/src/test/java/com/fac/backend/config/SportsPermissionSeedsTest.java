@@ -15,7 +15,7 @@ class SportsPermissionSeedsTest {
 
     @Test
     void everySeedBelongsToSportsModuleWithPrefixAndResource() {
-        assertTrue(SportsPermissionSeeds.ALL.stream().allMatch(seed ->
+        assertTrue(SportsPermissionSeeds.CATALOG.stream().allMatch(seed ->
                 seed.url().startsWith("/gestion-deportiva/")
                         && SportsPermissionSeeds.MODULE.equals(seed.module())
                         && seed.resource() != null && !seed.resource().isBlank()));
@@ -24,7 +24,7 @@ class SportsPermissionSeedsTest {
     @Test
     void seedsHaveNoDuplicatedMethodAndUrl() {
         Set<String> keys = new HashSet<>();
-        SportsPermissionSeeds.ALL.forEach(seed ->
+        SportsPermissionSeeds.CATALOG.forEach(seed ->
                 assertTrue(keys.add(seed.key()), "Permiso repetido: " + seed.key()));
     }
 
@@ -32,7 +32,7 @@ class SportsPermissionSeedsTest {
     // Si la semilla no estuviera ya normalizada, nunca coincidiría.
     @Test
     void seedUrlsAreAlreadyNormalized() {
-        SportsPermissionSeeds.ALL.forEach(seed ->
+        SportsPermissionSeeds.CATALOG.forEach(seed ->
                 assertEquals(seed.url(), PermissionMatcher.normalizeUrl(seed.url())));
     }
 
@@ -54,10 +54,19 @@ class SportsPermissionSeedsTest {
                 "PUT " + PermissionMatcher.normalizeUrl("/gestion-deportiva/matches/9/result")));
         assertTrue(containsKey(SportsPermissionSeeds.ALL,
                 "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/bets/14/void")));
-        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+        assertTrue(containsKey(SportsPermissionSeeds.CATALOG,
                 "PATCH " + PermissionMatcher.normalizeUrl("/gestion-deportiva/me/bets/14/cancel")));
-        assertTrue(containsKey(SportsPermissionSeeds.ALL,
+        assertTrue(containsKey(SportsPermissionSeeds.CATALOG,
                 "DELETE " + PermissionMatcher.normalizeUrl("/gestion-deportiva/me/favorite-teams/6")));
+    }
+
+    // El administrador deportivo no es aficionado: en /me/... debe recibir 403
+    @Test
+    void sportsAdminPermissionsExcludeFanSelfService() {
+        assertTrue(SportsPermissionSeeds.ALL.stream()
+                .noneMatch(seed -> seed.url().startsWith("/gestion-deportiva/me/")));
+        assertTrue(SportsPermissionSeeds.CATALOG.containsAll(SportsPermissionSeeds.ALL));
+        assertTrue(SportsPermissionSeeds.CATALOG.containsAll(SportsPermissionSeeds.FAN_SELF_SERVICE));
     }
 
     @Test
@@ -70,7 +79,7 @@ class SportsPermissionSeedsTest {
 
     @Test
     void fanPermissionsIncludeSelfServiceAndPublicQueriesWithoutAdminWrites() {
-        assertTrue(SportsPermissionSeeds.ALL.containsAll(SportsPermissionSeeds.FAN_PERMISSIONS));
+        assertTrue(SportsPermissionSeeds.CATALOG.containsAll(SportsPermissionSeeds.FAN_PERMISSIONS));
         assertTrue(SportsPermissionSeeds.FAN_PERMISSIONS.containsAll(SportsPermissionSeeds.FAN_SELF_SERVICE));
 
         Set<String> keys = new HashSet<>();

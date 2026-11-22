@@ -116,11 +116,15 @@ public class DatabaseSeeder {
             new PermissionSeed("DELETE", "/api/users/{id}/sessions/{id}")
     );
 
-    // El administrador general también tiene todo lo del microservicio ms-sports
+    // El administrador general tiene acceso total, incluido el catálogo completo de
+    // ms-sports; por eso esta lista también define qué permisos existen en la BD.
     private static final List<PermissionSeed> ADMIN_PERMISSIONS = Stream.concat(
             PLATFORM_PERMISSIONS.stream(),
-            SportsPermissionSeeds.ALL.stream()
+            SportsPermissionSeeds.CATALOG.stream()
     ).toList();
+
+    static final String ADMIN_EMAIL = "admin@uc.edu.co";
+    static final String SIMULATOR_EMAIL = "simulador@uc.edu.co";
 
     private static final List<PermissionSeed> COORDINATOR_PERMISSIONS = List.of(
             new PermissionSeed("GET", "/api/torneos"),
@@ -144,6 +148,9 @@ public class DatabaseSeeder {
 
     @Value("${app.seed.admin-password:Admin123!}")
     private String adminPassword;
+
+    @Value("${app.seed.simulator-password:Simulador123!}")
+    private String simulatorPassword;
 
     @Bean
     CommandLineRunner seedDatabase() {
@@ -181,8 +188,13 @@ public class DatabaseSeeder {
                     "Usuario de servicio del script que registra posiciones de la pizarra"
             );
 
-            User adminUser = findOrCreateUser();
+            User adminUser = findOrCreateUser(ADMIN_EMAIL, "Administrador", adminPassword);
             assignRole(adminUser, adminRole);
+
+            // Usuario de servicio con el que se autentica el script simulador de posiciones
+            User simulatorUser = findOrCreateUser(
+                    SIMULATOR_EMAIL, "Simulador de posiciones", simulatorPassword);
+            assignRole(simulatorUser, simulatorRole);
 
             // Se cargan todos los permisos en una sola consulta (sin consultas en ciclos)
             Map<String, Permission> permissionsByKey = permissionRepository.findAll()
@@ -216,6 +228,8 @@ public class DatabaseSeeder {
             assignPermissionsInBatch(coordinatorRole, COORDINATOR_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(consultantRole, CONSULTANT_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(sportsAdminRole, SportsPermissionSeeds.ALL, permissionsByKey);
+            // BD sembradas antes de separar /me/...: el admin deportivo no es aficionado
+            revokePermissions(sportsAdminRole, SportsPermissionSeeds.FAN_SELF_SERVICE);
             assignPermissionsInBatch(fanRole, SportsPermissionSeeds.FAN_PERMISSIONS, permissionsByKey);
             assignPermissionsInBatch(simulatorRole, SportsPermissionSeeds.POSITION_SIMULATOR, permissionsByKey);
 
@@ -254,6 +268,24 @@ public class DatabaseSeeder {
         }
     }
 
+    /** Quita al rol los permisos indicados si los tiene (una lectura y un borrado en lote). */
+    private void revokePermissions(Role role, List<PermissionSeed> seeds) {
+        Set<String> keysToRevoke = seeds.stream()
+                .map(PermissionSeed::key)
+                .collect(Collectors.toSet());
+
+        List<RolePermission> toRevoke = rolePermissionRepository
+                .findAllByRoleId(role.getId())
+                .stream()
+                .filter(rp -> keysToRevoke.contains(PermissionSeed.keyOf(
+                        rp.getPermission().getMethod(), rp.getPermission().getUrl())))
+                .toList();
+
+        if (!toRevoke.isEmpty()) {
+            rolePermissionRepository.deleteAll(toRevoke);
+        }
+    }
+
     private Role findOrCreateRole(String name, String description) {
         return roleRepository.findByNameIgnoreCase(name)
                 .orElseGet(() -> {
@@ -264,13 +296,13 @@ public class DatabaseSeeder {
                 });
     }
 
-    private User findOrCreateUser() {
-        return userRepository.findByEmail("admin@uc.edu.co")
+    private User findOrCreateUser(String email, String name, String rawPassword) {
+        return userRepository.findByEmail(email)
                 .orElseGet(() -> {
                     User user = new User();
-                    user.setName("Administrador");
-                    user.setEmail("admin@uc.edu.co");
-                    user.setPassword(passwordEncoder.encode(adminPassword));
+                    user.setName(name);
+                    user.setEmail(email);
+                    user.setPassword(passwordEncoder.encode(rawPassword));
                     return userRepository.save(user);
                 });
     }

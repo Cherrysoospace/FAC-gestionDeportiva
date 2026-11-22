@@ -3,9 +3,12 @@
 import com.fac.backend.entity.Permission;
 import com.fac.backend.entity.Role;
 import com.fac.backend.entity.RolePermission;
+import com.fac.backend.entity.User;
 import com.fac.backend.repository.PermissionRepository;
 import com.fac.backend.repository.RolePermissionRepository;
 import com.fac.backend.repository.RoleRepository;
+import com.fac.backend.repository.UserRepository;
+import com.fac.backend.repository.UserRoleRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -32,6 +35,12 @@ class DatabaseSeederIntegrationTest {
 
     @Autowired
     private RolePermissionRepository rolePermissionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private UserRoleRepository userRoleRepository;
 
     @Autowired
     private CommandLineRunner seedDatabase;
@@ -67,6 +76,8 @@ class DatabaseSeederIntegrationTest {
         assertTrue(sportsAdmin.contains("PUT /gestion-deportiva/matches/{id}/result"));
         assertTrue(sportsAdmin.contains("PATCH /gestion-deportiva/bets/{id}/void"));
         assertTrue(sportsAdmin.contains("POST /gestion-deportiva/fans"));
+        assertTrue(sportsAdmin.stream().noneMatch(key -> key.contains(" /gestion-deportiva/me/")));
+        assertTrue(admin.contains("POST /gestion-deportiva/me/fan"));
 
         assertEquals(SportsPermissionSeeds.FAN_PERMISSIONS.size(), fan.size());
         assertTrue(fan.contains("GET /gestion-deportiva/tournaments"));
@@ -101,6 +112,37 @@ class DatabaseSeederIntegrationTest {
         assertEquals(rolePermissionsBefore, rolePermissionRepository.count());
         assertEquals(SportsPermissionSeeds.ALL.size(), permissionKeysOf("ADMINISTRADOR DEPORTIVO").size());
         assertEquals(SportsPermissionSeeds.FAN_PERMISSIONS.size(), permissionKeysOf("AFICIONADO").size());
+    }
+
+    // BD sembradas con la versión anterior: el admin deportivo tenía /me/... y se le retira
+    @Test
+    void seederRevokesFanSelfServiceFromSportsAdmin() throws Exception {
+        Role sportsAdmin = roleRepository.findByNameIgnoreCase("ADMINISTRADOR DEPORTIVO").orElseThrow();
+        Permission meFan = permissionRepository
+                .findByUrlAndMethod("/gestion-deportiva/me/fan", "GET")
+                .orElseThrow();
+        RolePermission stale = new RolePermission();
+        stale.setRole(sportsAdmin);
+        stale.setPermission(meFan);
+        rolePermissionRepository.save(stale);
+        assertTrue(permissionKeysOf("ADMINISTRADOR DEPORTIVO").contains("GET /gestion-deportiva/me/fan"));
+
+        seedDatabase.run();
+
+        assertFalse(permissionKeysOf("ADMINISTRADOR DEPORTIVO").contains("GET /gestion-deportiva/me/fan"));
+        assertEquals(SportsPermissionSeeds.ALL.size(), permissionKeysOf("ADMINISTRADOR DEPORTIVO").size());
+    }
+
+    // El script simulador se autentica con un usuario de servicio sembrado
+    @Test
+    void simulatorServiceUserIsSeededWithItsRole() {
+        User simulator = userRepository.findByEmail(DatabaseSeeder.SIMULATOR_EMAIL).orElseThrow();
+        Role simulatorRole = roleRepository.findByNameIgnoreCase("SIMULADOR DE POSICIONES").orElseThrow();
+
+        assertTrue(simulator.isEnabled());
+        assertTrue(userRoleRepository.existsByUserIdAndRoleId(simulator.getId(), simulatorRole.getId()));
+        assertEquals(SportsPermissionSeeds.POSITION_SIMULATOR.size(),
+                permissionKeysOf("SIMULADOR DE POSICIONES").size());
     }
 
     private Set<String> permissionKeysOf(String roleName) {

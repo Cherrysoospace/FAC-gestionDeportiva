@@ -1,0 +1,84 @@
+# Plantilla de configuración. Cópiala como application.properties (misma carpeta)
+# y llena los secretos en backend/.env o como variables de entorno.
+# application.properties NO se sube a git; este .example sí.
+
+spring.application.name=backend
+server.port=8080
+
+# Secretos locales (credenciales de correo, etc.) en backend/.env, que no se sube a git.
+# Ver .env.example. Las variables de entorno del sistema tienen prioridad.
+spring.config.import=optional:file:.env[.properties]
+
+# Base de datos local MySQL
+spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/gestiondeportiva?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD:}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.open-in-view=false
+spring.jpa.properties.hibernate.format_sql=false
+
+# JWT
+security.jwt.secret=${JWT_SECRET:cambia-esta-clave-por-una-de-32-bytes-o-mas}
+security.jwt.expiration-minutes=15
+
+# Firebase
+firebase.project-id=${FIREBASE_PROJECT_ID:facgestiondeportiva}
+
+# CORS
+app.cors.allowed-origins=${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+# Correo
+#   console = se imprime en el log (por defecto, no necesita configuración)
+#   smtp    = envío real; requiere MAIL_USERNAME y MAIL_PASSWORD
+app.mail.mode=${MAIL_MODE:console}
+app.mail.from=${MAIL_FROM:${MAIL_USERNAME:no-reply@fac.local}}
+
+spring.mail.host=${MAIL_HOST:smtp.gmail.com}
+spring.mail.port=${MAIL_PORT:587}
+spring.mail.username=${MAIL_USERNAME:}
+spring.mail.password=${MAIL_PASSWORD:}
+spring.mail.default-encoding=UTF-8
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+# Que un servidor lento no deje hilos colgados indefinidamente
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+
+# Hilos para tareas en segundo plano (@Async, ej. envío de correos)
+spring.task.execution.thread-name-prefix=tarea-
+# core-size <= max-size (por defecto core-size es 8, mayor que este máximo)
+spring.task.execution.pool.core-size=2
+spring.task.execution.pool.max-size=4
+spring.task.execution.pool.queue-capacity=100
+
+# Recuperación de contraseña (HU-SE-09)
+app.password-reset.expiration-minutes=${PASSWORD_RESET_EXPIRATION_MINUTES:30}
+app.password-reset.reset-url=${PASSWORD_RESET_URL:http://localhost:3000/auth/reset-password}
+
+# Autenticación de dos factores (HU-SE-10)
+app.two-factor.code-length=${TWO_FACTOR_CODE_LENGTH:6}
+app.two-factor.expiration-minutes=${TWO_FACTOR_EXPIRATION_MINUTES:5}
+app.two-factor.max-attempts=${TWO_FACTOR_MAX_ATTEMPTS:5}
+app.two-factor.resend-cooldown-seconds=${TWO_FACTOR_RESEND_COOLDOWN_SECONDS:30}
+
+# Fotos de perfil (HU-SE-02)
+app.profile-photos.directory=${PROFILE_PHOTOS_DIR:uploads/profile-photos}
+app.profile-photos.max-size=2MB
+spring.servlet.multipart.max-file-size=2MB
+spring.servlet.multipart.max-request-size=3MB
+
+# Discord OAuth
+discord.client-id=${DISCORD_CLIENT_ID:1565105283947176079}
+discord.client-secret=${DISCORD_CLIENT_SECRET:}
+discord.allowed-redirect-uris=${DISCORD_REDIRECT_URIS:http://localhost:3000/auth/discord/callback}
+
+# Usuarios sembrados al arrancar (DatabaseSeeder). Cambia estas claves fuera de desarrollo.
+#   admin@uc.edu.co      -> rol ADMIN
+#   simulador@uc.edu.co  -> rol SIMULADOR DE POSICIONES (script de la pizarra, HU-GC-09)
+app.seed.admin-password=${SEED_ADMIN_PASSWORD:Admin123!}
+app.seed.simulator-password=${SEED_SIMULATOR_PASSWORD:Simulador123!}

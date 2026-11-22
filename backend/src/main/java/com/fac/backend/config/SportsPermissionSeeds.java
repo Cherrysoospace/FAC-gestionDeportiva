@@ -153,8 +153,8 @@ final class SportsPermissionSeeds {
                     get("/bets" + ID, "Apuestas"),
                     post("/bets", "Apuestas"),
                     patch("/bets" + ID + "/void", "Apuestas")
-            ),
-            FAN_SELF_SERVICE
+            )
+            // FAN_SELF_SERVICE va aparte: /me/... es solo del aficionado
     );
 
     /**
@@ -168,10 +168,16 @@ final class SportsPermissionSeeds {
             post("/match-positions", "Posiciones")
     );
 
-    /** Todos los permisos de ms-sports: los recibe el Administrador deportivo. */
+    /**
+     * Permisos de administración de ms-sports: los recibe el Administrador deportivo.
+     * No incluye /me/...: el admin deportivo no es aficionado y debe recibir 403 ahí.
+     */
     static final List<PermissionSeed> ALL = RESOURCES.stream()
             .flatMap(List::stream)
             .toList();
+
+    /** Catálogo completo de rutas de ms-sports (administración + autogestión /me/...). */
+    static final List<PermissionSeed> CATALOG = concat(ALL, FAN_SELF_SERVICE);
 
     /** Consultas permitidas al aficionado: nunca escribe en rutas de administración. */
     static final List<PermissionSeed> FAN_READ_ONLY = ALL.stream()
